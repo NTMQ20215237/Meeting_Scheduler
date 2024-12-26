@@ -129,6 +129,24 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         bool isTeacher = (is_teacher != 0); // Convert to bool
         return handleRegister(email, name, password, isMale, isTeacher);
     }
+    else if (command == "CHECK_MEETING_WITH_TEACHER")
+    {
+        std::string email = parts[1];
+        int meetingId = std::stoi(parts[2]);
+        return checkMeetingWithTeacher(email, meetingId);
+    }
+    else if (command == "CREATE_CONTENT")
+    {
+        // Handle ENTER_CONTENT command
+        // Example: ENTER_CONTENT/1/Meeting minutes content
+        // Extract meeting ID and content from parts
+        int meetingId = std::stoi(parts[1]);
+        std::string content = parts[2];
+        // Call a method to handle this command
+        return Server::handleCreateContent(meetingId, content);
+        // handleEnterContent(meetingId, content);
+        return "200;Content entered successfully";
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -182,4 +200,20 @@ std::string Server::handleLogout(int clientSocket)
         loggedInUsers.erase(clientSocket);
     }
     return "200;Logout successful";
+}
+std::string Server::checkMeetingWithTeacher(const std::string &email, int meetingId)
+{
+    if (dbManager.checkMeetingWithTeacher(email, meetingId))
+    {
+        return "200;Teacher and meeting match";
+    }
+    return "409;Conflict";
+}
+std::string Server::handleCreateContent(int meetingId, const std::string &content)
+{
+    if (dbManager.createContent(meetingId, content))
+    {
+        return "200;Content created successfully";
+    }
+    return "404;Bad request";
 }

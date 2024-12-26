@@ -55,7 +55,7 @@ int main()
                 while (true)
                 {
                     std::cout << "\nSelect an teacher's option:\n";
-                    std::cout << "1. Update Profile\n";
+                    std::cout << "1. Enter content (meeting minutes) for meetings\n";
                     std::cout << "2. Logout\n";
                     std::cout << "3. Exit\n";
 
@@ -66,9 +66,36 @@ int main()
 
                     if (option == 1)
                     {
-                        // Cập nhật thông tin người dùng (ví dụ)
-                        std::cout << "Updating profile...\n";
-                        // Thực hiện các thao tác cần thiết
+                        int meetingId;
+                        std::string content, name, password, isMaleStr, isTeacherStr;
+                        std::cout << "Enter content\nMeeting id: ";
+                        std::cin >> meetingId;
+                        std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
+                        command = "CHECK_MEETING_WITH_TEACHER/" + email + "/" + std::to_string(meetingId);
+                        response = client.sendRequest(command);
+                        if (response == "200;Teacher and meeting match")
+                        {
+                            std::cout << "Permission Accept\nEnter content (enter 'END' to finish):\n";
+
+                            std::string content;
+                            std::string line;
+
+                            // Lặp lại để người dùng có thể nhập nhiều dòng
+                            while (true)
+                            {
+                                std::getline(std::cin, line); // Đọc từng dòng
+                                if (line == "END")            // Kết thúc khi người dùng nhập 'END'
+                                    break;
+                                content += line + "\n"; // Thêm dòng vào nội dung, giữ xuống dòng
+                            }
+                            command = "CREATE_CONTENT/" + std::to_string(meetingId) + "/" + content;
+                            response = client.sendRequest(command);
+                            // std::cout << response << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "You don't have permission for this meeting" << std::endl;
+                        }
                     }
                     else if (option == 2)
                     {
