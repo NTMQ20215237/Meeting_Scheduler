@@ -144,3 +144,28 @@ bool DatabaseManager::createContent(int meetingId, const std::string &content)
         return false;
     }
 }
+
+//Fetch thời gian rảnh của thầy từ DB
+std::vector<std::pair<std::string, std::string>> DatabaseManager::getTeacherTimeSlots(int teacherId)
+{
+    std::vector<std::pair<std::string, std::string>> timeSlots;
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result result = txn.exec_params(
+            "SELECT start_time, end_time FROM TeacherTimeSlots WHERE teacher_id = $1",
+            teacherId);
+
+        for (auto row : result)
+        {
+            timeSlots.emplace_back(row["start_time"].c_str(), row["end_time"].c_str());
+        }
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+    }
+    return timeSlots;
+}

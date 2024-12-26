@@ -3,6 +3,7 @@
 #include <cstring>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <json/json.h>
 
 Client::Client(const std::string &serverIP, int port)
 {
@@ -57,5 +58,28 @@ std::string Client::sendRequest(const std::string &request)
     {
         std::cerr << "Failed to receive response from server" << std::endl;
         return ""; // Trả về chuỗi rỗng nếu không nhận được phản hồi
+    }
+}
+
+// Request và Xem lịch rảnh của teacher
+void Client::viewTeacherTimeSlots(int teacherId)
+{
+    Json::Value requestJson;
+    requestJson["teacher_id"] = teacherId;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("VIEW_TIME_SLOTS", request, response);
+
+    Json::Value responseJson;
+    Json::Reader reader;
+    reader.parse(response, responseJson);
+
+    for (const auto &slot : responseJson["time_slots"])
+    {
+        std::cout << "Start Time: " << slot["start_time"].asString()
+ 
     }
 }

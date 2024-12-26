@@ -8,6 +8,7 @@
 #include <sstream>
 #include <mutex>
 #include <map>
+#include <json/json.h>
 
 DatabaseManager dbManager("dbname=meeting_scheduler user=admin password=secret host=localhost");
 std::mutex clientMutex;
@@ -217,3 +218,29 @@ std::string Server::handleCreateContent(int meetingId, const std::string &conten
     }
     return "404;Bad request";
 }
+
+//Handle Request Xem lịch rảnh của thầy
+void Server::handleViewTimeSlotsRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int teacherId = requestJson["teacher_id"].asInt();
+
+    DatabaseManager dbManager(connectionString);
+    auto timeSlots = dbManager.getTeacherTimeSlots(teacherId);
+
+    Json::Value responseJson;
+    for (const auto &slot : timeSlots)
+    {
+        Json::Value slotJson;
+        slotJson["start_time"] = slot.first;
+        slotJson["end_time"] = slot.second;
+        responseJson["time_slots"].append(slotJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+ 
