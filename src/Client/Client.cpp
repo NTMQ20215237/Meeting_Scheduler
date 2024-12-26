@@ -139,3 +139,57 @@ void Client::editTimeSlot(int slotId, const std::string &startTime, const std::s
         std::cout << "Failed to edit time slot." << std::endl;
     }
 }
+
+#Send request to view meeting shcedule by date or week
+void Client::viewMeetingsByDate(const std::string &date)
+{
+    Json::Value requestJson;
+    requestJson["date"] = date;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("VIEW_MEETINGS_BY_DATE", request, response);
+
+    Json::Value responseJson;
+    Json::Reader reader;
+    reader.parse(response, responseJson);
+
+    for (const auto &meeting : responseJson["meetings"])
+    {
+        std::cout << "Meeting ID: " << meeting["id"].asInt()
+                  << ", Teacher ID: " << meeting["teacher_id"].asInt()
+                  << ", Student ID: " << meeting["student_id"].asInt()
+                  << ", Start Time: " << meeting["start_time"].asString()
+                  << ", End Time: " << meeting["end_time"].asString()
+                  << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+    }
+}
+
+void Client::viewMeetingsByWeek(const std::string &startDate, const std::string &endDate)
+{
+    Json::Value requestJson;
+    requestJson["start_date"] = startDate;
+    requestJson["end_date"] = endDate;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("VIEW_MEETINGS_BY_WEEK", request, response);
+
+    Json::Value responseJson;
+    Json::Reader reader;
+    reader.parse(response, responseJson);
+
+    for (const auto &meeting : responseJson["meetings"])
+    {
+        std::cout << "Meeting ID: " << meeting["id"].asInt()
+                  << ", Teacher ID: " << meeting["teacher_id"].asInt()
+                  << ", Student ID: " << meeting["student_id"].asInt()
+                  << ", Start Time: " << meeting["start_time"].asString()
+                  << ", End Time: " << meeting["end_time"].asString()
+                  << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+    }
+}

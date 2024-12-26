@@ -4,6 +4,7 @@
 #include <sstream>
 #include <functional>
 #include <algorithm>
+#include <vector>
 // Có thể cần thêm thư viện cho mã hóa mật khẩu như OpenSSL
 
 DatabaseManager::DatabaseManager(const std::string &connectionStr)
@@ -210,4 +211,65 @@ bool DatabaseManager::editTimeSlot(int slotId, const std::string &startTime, con
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return false;
     }
+}
+
+#Fetch meeting schdule by week or date
+std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByDate(const std::string &date)
+{
+    std::vector<std::tuple<int, int, std::string, std::string, bool>> meetings;
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result result = txn.exec_params(
+            "SELECT id, teacher_id, student_id, start_time, end_time, is_group_meeting FROM Meetings WHERE DATE(start_time) = $1",
+            date);
+
+        for (auto row : result)
+        {
+            meetings.emplace_back(
+                row["id"].as<int>(),
+                row["teacher_id"].as<int>(),
+                row["student_id"].as<int>(),
+                row["start_time"].c_str(),
+                row["end_time"].c_str(),
+                row["is_group_meeting"].as<bool>());
+        }
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+    }
+    return meetings;
+}
+
+std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByWeek(const std::string &startDate, const std::string &endDate)
+{
+    std::vector<std::tuple<int, int, std::string, std::string, bool>> meetings;
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result result = txn.exec_params(
+            "SELECT id, teacher_id, student_id, start_time, end_time, is_group_meeting FROM Meetings WHERE start_time BETWEEN $1 AND $2",
+            startDate, endDate);
+
+        for (auto row : result)
+        {
+            meetings.emplace_back(
+                row["id"].as<int>(),
+                row["teacher_id"].as<int>(),
+                row["student_id"].as<int>(),
+                row["start_time"].c_str(),
+                row["end_time"].c_str(),
+                row["is_group_meeting"].as<bool>());
+        }
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+    }
+    return meetings;
 }

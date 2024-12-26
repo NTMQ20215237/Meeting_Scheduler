@@ -285,3 +285,60 @@ void Server::handleEditTimeSlotRequest(const std::string &request, std::string &
     Json::StreamWriterBuilder writer;
     response = Json::writeString(writer, responseJson);
 }
+#Handle request view meeting shcedule by date or week
+void Server::handleViewMeetingsByDateRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    std::string date = requestJson["date"].asString();
+
+    DatabaseManager dbManager(connectionString);
+    auto meetings = dbManager.getMeetingsByDate(date);
+
+    Json::Value responseJson;
+    for (const auto &meeting : meetings)
+    {
+        Json::Value meetingJson;
+        meetingJson["id"] = std::get<0>(meeting);
+        meetingJson["teacher_id"] = std::get<1>(meeting);
+        meetingJson["student_id"] = std::get<2>(meeting);
+        meetingJson["start_time"] = std::get<3>(meeting);
+        meetingJson["end_time"] = std::get<4>(meeting);
+        meetingJson["is_group_meeting"] = std::get<5>(meeting);
+        responseJson["meetings"].append(meetingJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+
+void Server::handleViewMeetingsByWeekRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    std::string startDate = requestJson["start_date"].asString();
+    std::string endDate = requestJson["end_date"].asString();
+
+    DatabaseManager dbManager(connectionString);
+    auto meetings = dbManager.getMeetingsByWeek(startDate, endDate);
+
+    Json::Value responseJson;
+    for (const auto &meeting : meetings)
+    {
+        Json::Value meetingJson;
+        meetingJson["id"] = std::get<0>(meeting);
+        meetingJson["teacher_id"] = std::get<1>(meeting);
+        meetingJson["student_id"] = std::get<2>(meeting);
+        meetingJson["start_time"] = std::get<3>(meeting);
+        meetingJson["end_time"] = std::get<4>(meeting);
+        meetingJson["is_group_meeting"] = std::get<5>(meeting);
+        responseJson["meetings"].append(meetingJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
