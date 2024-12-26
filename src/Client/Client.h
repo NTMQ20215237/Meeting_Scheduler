@@ -2,8 +2,10 @@
 #define CLIENT_H
 
 #include <string>
+using namespace std;
 
-class Client {
+class Client
+{
 public:
     Client(const std::string &serverIP, int port);
     ~Client();

@@ -41,5 +41,7 @@ void Client::sendRequest(const std::string &request) {
     int bytesRead = read(clientSocket, buffer, 1024);
     if (bytesRead > 0) {
         std::cout << "Server response: " << std::string(buffer, bytesRead) << std::endl;
+    } else {
+        std::cerr << "Failed to receive response from server" << std::endl;
     }
 }
