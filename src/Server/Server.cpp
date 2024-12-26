@@ -153,15 +153,26 @@ std::string Server::handleRegister(const std::string &email, const std::string &
 
 std::string Server::handleLogin(int clientSocket, const std::string &email, const std::string &password)
 {
-    if (dbManager.loginUser(email, password))
+    if (dbManager.loginUser(email, password) == 2)
     {
         {
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful";
+        return "200;Login successful by teacher";
     }
-    return "401;Invalid credentials";
+    else if (dbManager.loginUser(email, password) == 1)
+    {
+        {
+            std::lock_guard<std::mutex> lock(clientMutex);
+            loggedInUsers[clientSocket] = email;
+        }
+        return "200;Login successful by student";
+    }
+    else
+    {
+        return "401;Invalid credentials";
+    }
 }
 
 std::string Server::handleLogout(int clientSocket)
