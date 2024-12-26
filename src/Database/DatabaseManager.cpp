@@ -169,3 +169,45 @@ std::vector<std::pair<std::string, std::string>> DatabaseManager::getTeacherTime
     }
     return timeSlots;
 }
+
+bool DatabaseManager::createTimeSlot(int teacherId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting)
+{
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        txn.exec_params(
+            "INSERT INTO TeacherTimeSlots (teacher_id, start_time, end_time, is_group_meeting) VALUES ($1, $2, $3, $4)",
+            teacherId, startTime, endTime, isGroupMeeting);
+
+        txn.commit();
+        return true;
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::editTimeSlot(int slotId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting)
+{
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        txn.exec_params(
+            "UPDATE TeacherTimeSlots SET start_time = $1, end_time = $2, is_group_meeting = $3 WHERE id = $4",
+            startTime, endTime, isGroupMeeting, slotId);
+
+        txn.commit();
+        return true;
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return false;
+    }
+}

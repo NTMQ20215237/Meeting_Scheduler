@@ -83,3 +83,59 @@ void Client::viewTeacherTimeSlots(int teacherId)
  
     }
 }
+
+void Client::createTimeSlot(int teacherId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting)
+{
+    Json::Value requestJson;
+    requestJson["teacher_id"] = teacherId;
+    requestJson["start_time"] = startTime;
+    requestJson["end_time"] = endTime;
+    requestJson["is_group_meeting"] = isGroupMeeting;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("CREATE_TIME_SLOT", request, response);
+
+    Json::Value responseJson;
+    Json::Reader reader;
+    reader.parse(response, responseJson);
+
+    if (responseJson["success"].asBool())
+    {
+        std::cout << "Time slot created successfully." << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to create time slot." << std::endl;
+    }
+}
+
+void Client::editTimeSlot(int slotId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting)
+{
+    Json::Value requestJson;
+    requestJson["slot_id"] = slotId;
+    requestJson["start_time"] = startTime;
+    requestJson["end_time"] = endTime;
+    requestJson["is_group_meeting"] = isGroupMeeting;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("EDIT_TIME_SLOT", request, response);
+
+    Json::Value responseJson;
+    Json::Reader reader;
+    reader.parse(response, responseJson);
+
+    if (responseJson["success"].asBool())
+    {
+        std::cout << "Time slot edited successfully." << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to edit time slot." << std::endl;
+    }
+}

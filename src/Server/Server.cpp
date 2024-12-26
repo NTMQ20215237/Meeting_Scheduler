@@ -243,4 +243,45 @@ void Server::handleViewTimeSlotsRequest(const std::string &request, std::string 
     Json::StreamWriterBuilder writer;
     response = Json::writeString(writer, responseJson);
 }
- 
+
+void Server::handleCreateTimeSlotRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int teacherId = requestJson["teacher_id"].asInt();
+    std::string startTime = requestJson["start_time"].asString();
+    std::string endTime = requestJson["end_time"].asString();
+    bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
+
+    DatabaseManager dbManager(connectionString);
+    bool success = dbManager.createTimeSlot(teacherId, startTime, endTime, isGroupMeeting);
+
+    Json::Value responseJson;
+    responseJson["success"] = success;
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+
+void Server::handleEditTimeSlotRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int slotId = requestJson["slot_id"].asInt();
+    std::string startTime = requestJson["start_time"].asString();
+    std::string endTime = requestJson["end_time"].asString();
+    bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
+
+    DatabaseManager dbManager(connectionString);
+    bool success = dbManager.editTimeSlot(slotId, startTime, endTime, isGroupMeeting);
+
+    Json::Value responseJson;
+    responseJson["success"] = success;
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
