@@ -58,6 +58,7 @@ int main()
                     std::cout << "1. Enter content (meeting minutes) for meetings\n";
                     std::cout << "2. Logout\n";
                     std::cout << "3. Exit\n";
+                    std::cout << "4. View meeting details associating a student\n";
 
                     int option;
                     std::cout << "Enter your choice: ";
@@ -111,6 +112,25 @@ int main()
                         client.sendRequest(command);
                         std::cout << "Exiting...\n";
                         return 0; // Thoát khỏi chương trình
+                    }
+                    else if (option == 4)
+                    {
+                        std::string studentName;
+                        std::cout << "View your meeting details associating a student\n";
+                        std::cout << "Enter student name: ";
+                        std::getline(std::cin, studentName);
+                        // std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
+                        command = "VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT/" + email + "/" + studentName;
+                        response = client.sendRequest(command);
+                        // if (response == "200;Meeting details found")
+                        // {
+                        //     std::cout << "Meeting details found\n";
+                        //     // Xử lý phản hồi và hiển thị thông tin
+                        // }
+                        // else
+                        // {
+                        //     std::cout << "You have no meeting assigned by this student\n";
+                        // }
                     }
                     else
                     {

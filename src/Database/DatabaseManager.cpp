@@ -144,3 +144,47 @@ bool DatabaseManager::createContent(int meetingId, const std::string &content)
         return false;
     }
 }
+std::string DatabaseManager::viewMeetingDetailsAssociatingStudent(const std::string &email, const std::string &studentName)
+{
+    std::stringstream resultStream; // Để lưu trữ kết quả dưới dạng chuỗi
+
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "SELECT m.meeting_id,n.note_content,m.teacher_email,s.email AS student_email FROM Meetings m JOIN Users u ON m.teacher_email = u.email JOIN meeting_participants mp ON m.meeting_id = mp.meeting_id JOIN Users s ON mp.student_id = s.id LEFT JOIN Notes n ON m.meeting_id = n.meeting_id WHERE u.email = $1 AND s.name = $2 ;",
+            email, studentName);
+
+        txn.commit();
+
+        if (!r.empty())
+        {
+            for (const auto &row : r)
+            {
+                int meeting_id = row[0].as<int>();                                                   // meeting_id
+                std::string note_content = row[1].is_null() ? "No notes" : row[1].as<std::string>(); // Note, or "No notes"
+                std::string teacher_email = row[2].as<std::string>();                                // teacher_email
+                std::string student_email = row[3].as<std::string>();                                // student_email
+
+                resultStream << "Meeting ID: " << meeting_id
+                             << ", Notes: " << note_content
+                             << ", Teacher Email: " << teacher_email
+                             << ", Student Email: " << student_email << std::endl;
+            }
+        }
+        else
+        {
+            resultStream << "No meetings found for the specified teacher and student." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
+}

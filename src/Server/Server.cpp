@@ -147,6 +147,17 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         // handleEnterContent(meetingId, content);
         return "200;Content entered successfully";
     }
+    else if (command == "VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT")
+    {
+        // Handle VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT command
+        // Example: VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT/teacher_email/student_name
+        // Extract teacher email and student name from parts
+        std::string teacherEmail = parts[1];
+        std::string studentName = parts[2];
+        // Call a method to handle this command
+        return Server::handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
+        // handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -216,4 +227,19 @@ std::string Server::handleCreateContent(int meetingId, const std::string &conten
         return "200;Content created successfully";
     }
     return "404;Bad request";
+}
+std::string Server::handleViewMeetingDetailsAssociatingStudent(const std::string &teacherEmail, const std::string &studentName)
+{
+    // Handle VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT command
+    // Example: VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT/teacher_email/student_name
+    // Call a method to handle this command
+    std::string result = dbManager.viewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
+    if (result.empty())
+    {
+        return "404;No meeting details found";
+    }
+    else
+    {
+        return result;
+    }
 }

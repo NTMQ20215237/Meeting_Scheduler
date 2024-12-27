@@ -50,7 +50,7 @@ std::string Client::sendRequest(const std::string &request)
     if (bytesRead > 0)
     {
         std::string response(buffer, bytesRead);
-        std::cout << "Server response: " << response << std::endl;
+        std::cout << "Server response:\n " << response << std::endl;
         return response; // Trả về phản hồi dưới dạng chuỗi
     }
     else
