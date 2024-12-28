@@ -129,6 +129,18 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         bool isTeacher = (is_teacher != 0); // Convert to bool
         return handleRegister(email, name, password, isMale, isTeacher);
     }
+    else if (command == "CANCEL_MEETING")
+    {
+        std::string meetingID = parts[1];
+        return handleCancelMeeting(clientSocket, meetingID);
+    }
+    else if (command == "SCHEDULE_INDIVIDUAL_MEETING")
+    {
+        std::string timeslot_id = parts[1];
+        std::string student_id = parts[2];
+        std::string type = parts[3];
+        return handleScheduleIndividualMeeting(clientSocket, timeslot_id, student_id, type);
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -171,4 +183,49 @@ std::string Server::handleLogout(int clientSocket)
         loggedInUsers.erase(clientSocket);
     }
     return "200;Logout successful";
+}
+
+std::string Server::handleCancelMeeting(int clientSocket, const std::string &meetingID)
+{
+    std::string email;
+    {
+        std::lock_guard<std::mutex> lock(clientMutex);
+        auto it = loggedInUsers.find(clientSocket);
+        if (it != loggedInUsers.end())
+        {
+            email = it->second;
+        }
+        else
+        {
+            return "401;Not logged in";
+        }
+    }
+
+    if (dbManager.cancelMeeting(meetingID))
+    {
+        return "200;Meeting cancelled";
+    }
+    return "404;Meeting not found";
+}
+
+std::string Server::handleScheduleIndividualMeeting(int clientSocket, const std::string &timeslot_id, const std::string &student_id, const std::string &type)
+{
+    std::string email;
+    {
+        std::lock_guard<std::mutex> lock(clientMutex);
+        auto it = loggedInUsers.find(clientSocket);
+        if (it != loggedInUsers.end())
+        {
+            email = it->second;
+        }
+        else
+        {
+            return "401;Not logged in";
+        }
+        if(dbManager.scheduleIndividualMeeting(timeslot_id, student_id, type)){
+            return "200;Meeting scheduled";
+        }
+
+        return "404;Meeting not found";
+    }
 }
