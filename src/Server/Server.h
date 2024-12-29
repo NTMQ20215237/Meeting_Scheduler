@@ -16,7 +16,6 @@ private:
     int serverSocket;
     bool running;
     std::string email;
-    std::map<int, std::string> loggedInUsers;
     std::vector<std::string> split(const std::string &str, char delimiter);
     void handleClient(int clientSocket);
     std::string processRequest(int clientSocket, const std::string &request);                         // Updated signature

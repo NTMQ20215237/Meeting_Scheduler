@@ -145,7 +145,7 @@ bool DatabaseManager::scheduleIndividualMeeting(const std::string& timeslot_id, 
         pqxx::connection conn(connectionString);
         pqxx::work txn(conn);
 
-        txn.exec_params(           "INSERT INTO meeting_participants (meeting_id, student_id, type) VALUES ($1, $2, $3)",
+        txn.exec_params( "INSERT INTO meeting_participants (meeting_id, student_id, type) VALUES ($1, $2, $3)",
             timeslot_id, student_id, type
         );
 
@@ -159,12 +159,6 @@ bool DatabaseManager::scheduleIndividualMeeting(const std::string& timeslot_id, 
     }
     return false;
 }
-
-
-
-
-
-
 
 
 bool DatabaseManager::createContent(int meetingId, const std::string &content)
@@ -259,7 +253,7 @@ bool DatabaseManager::editTimeSlot(int slotId, const std::string &startTime, con
     }
 }
 
-#Fetch meeting schdule by week or date
+// #Fetch meeting schdule by week or date
 std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByDate(const std::string &date)
 {
     std::vector<std::tuple<int, int, std::string, std::string, bool>> meetings;
