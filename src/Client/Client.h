@@ -9,7 +9,7 @@ class Client
 public:
     Client(const std::string &serverIP, int port);
     ~Client();
-    void sendRequest(const std::string &request);
+    std::string sendRequest(const std::string &request);
 
 private:
     int clientSocket;

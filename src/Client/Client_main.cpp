@@ -13,6 +13,7 @@ int main()
 
     Client client(serverIP, port);
     std::string command;
+    std::string response;
 
     while (true)
     {
@@ -38,6 +39,7 @@ int main()
             bool isTeacher = parseBoolean(isTeacherStr);
 
             command = "REGISTER/" + email + "/" + name + "/" + password + "/" + (isMale ? "1" : "0") + "/" + (isTeacher ? "1" : "0");
+            client.sendRequest(command);
         }
         else if (command == "LOGIN")
         {
@@ -48,6 +50,121 @@ int main()
             std::getline(std::cin, password);
 
             command = "LOGIN/" + email + "/" + password;
+            response = client.sendRequest(command);
+            if (response == "200;Login successful by teacher")
+            {
+                // Hiển thị các chức năng khác sau khi đăng nhập thành công
+                while (true)
+                {
+                    std::cout << "\nSelect an teacher's option:\n";
+                    std::cout << "1. Enter content (meeting minutes) for meetings\n";
+                    std::cout << "2. Logout\n";
+                    std::cout << "3. Exit\n";
+
+                    int option;
+                    std::cout << "Enter your choice: ";
+                    std::cin >> option;
+                    std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
+
+                    if (option == 1)
+                    {
+                        int meetingId;
+                        std::string content, name, password, isMaleStr, isTeacherStr;
+                        std::cout << "Enter content\nMeeting id: ";
+                        std::cin >> meetingId;
+                        std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
+                        command = "CHECK_MEETING_WITH_TEACHER/" + email + "/" + std::to_string(meetingId);
+                        response = client.sendRequest(command);
+                        if (response == "200;Teacher and meeting match")
+                        {
+                            std::cout << "Permission Accept\nEnter content (enter 'END' to finish):\n";
+
+                            std::string content;
+                            std::string line;
+
+                            // Lặp lại để người dùng có thể nhập nhiều dòng
+                            while (true)
+                            {
+                                std::getline(std::cin, line); // Đọc từng dòng
+                                if (line == "END")            // Kết thúc khi người dùng nhập 'END'
+                                    break;
+                                content += line + "\n"; // Thêm dòng vào nội dung, giữ xuống dòng
+                            }
+                            command = "CREATE_CONTENT/" + std::to_string(meetingId) + "/" + content;
+                            response = client.sendRequest(command);
+                            // std::cout << response << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "You don't have permission for this meeting" << std::endl;
+                        }
+                    }
+                    else if (option == 2)
+                    {
+                        // Đăng xuất
+                        command = "LOGOUT/";
+                        client.sendRequest(command);
+                        std::cout << "Logged out.\n";
+                        break; // Thoát khỏi vòng lặp các chức năng sau khi logout
+                    }
+                    else if (option == 3)
+                    {
+                        command = "EXIT/";
+                        client.sendRequest(command);
+                        std::cout << "Exiting...\n";
+                        return 0; // Thoát khỏi chương trình
+                    }
+                    else
+                    {
+                        std::cout << "Invalid option. Try again.\n";
+                    }
+                }
+            }
+            else if (response == "200;Login successful by student")
+            {
+                // Hiển thị các chức năng khác sau khi đăng nhập thành công
+                while (true)
+                {
+                    std::cout << "\nSelect an student's option:\n";
+                    std::cout << "1. Update Profile\n";
+                    std::cout << "2. Logout\n";
+                    std::cout << "3. Exit\n";
+
+                    int option;
+                    std::cout << "Enter your choice: ";
+                    std::cin >> option;
+                    std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
+
+                    if (option == 1)
+                    {
+                        // Cập nhật thông tin người dùng (ví dụ)
+                        std::cout << "Updating profile...\n";
+                        // Thực hiện các thao tác cần thiết
+                    }
+                    else if (option == 2)
+                    {
+                        // Đăng xuất
+                        command = "LOGOUT/";
+                        client.sendRequest(command);
+                        std::cout << "Logged out.\n";
+                        break; // Thoát khỏi vòng lặp các chức năng sau khi logout
+                    }
+                    else if (option == 3)
+                    {
+                        command = "EXIT/";
+                        client.sendRequest(command);
+                        std::cout << "Exiting...\n";
+                    }
+                    else
+                    {
+                        std::cout << "Invalid option. Try again.\n";
+                    }
+                }
+            }
+            else
+            {
+                continue;
+            }
         }
         else if (command == "CANCEL_MEETING")
         {
@@ -101,8 +218,6 @@ int main()
             std::cout << "Invalid command\n";
             continue;
         }
-
-        client.sendRequest(command);
     }
 
     return 0;

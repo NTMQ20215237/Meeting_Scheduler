@@ -8,6 +8,7 @@
 #include <sstream>
 #include <mutex>
 #include <map>
+#include <json/json.h>
 
 DatabaseManager dbManager("dbname=meeting_scheduler user=admin password=secret host=localhost");
 std::mutex clientMutex;
@@ -141,6 +142,24 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         std::string type = parts[3];
         return handleScheduleIndividualMeeting(clientSocket, timeslot_id, student_id, type);
     }
+    else if (command == "CHECK_MEETING_WITH_TEACHER")
+    {
+        std::string email = parts[1];
+        int meetingId = std::stoi(parts[2]);
+        return checkMeetingWithTeacher(email, meetingId);
+    }
+    else if (command == "CREATE_CONTENT")
+    {
+        // Handle ENTER_CONTENT command
+        // Example: ENTER_CONTENT/1/Meeting minutes content
+        // Extract meeting ID and content from parts
+        int meetingId = std::stoi(parts[1]);
+        std::string content = parts[2];
+        // Call a method to handle this command
+        return Server::handleCreateContent(meetingId, content);
+        // handleEnterContent(meetingId, content);
+        return "200;Content entered successfully";
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -165,15 +184,26 @@ std::string Server::handleRegister(const std::string &email, const std::string &
 
 std::string Server::handleLogin(int clientSocket, const std::string &email, const std::string &password)
 {
-    if (dbManager.loginUser(email, password))
+    if (dbManager.loginUser(email, password) == 2)
     {
         {
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful";
+        return "200;Login successful by teacher";
     }
-    return "401;Invalid credentials";
+    else if (dbManager.loginUser(email, password) == 1)
+    {
+        {
+            std::lock_guard<std::mutex> lock(clientMutex);
+            loggedInUsers[clientSocket] = email;
+        }
+        return "200;Login successful by student";
+    }
+    else
+    {
+        return "401;Invalid credentials";
+    }
 }
 
 std::string Server::handleLogout(int clientSocket)
@@ -184,6 +214,7 @@ std::string Server::handleLogout(int clientSocket)
     }
     return "200;Logout successful";
 }
+
 
 std::string Server::handleCancelMeeting(int clientSocket, const std::string &meetingID)
 {
@@ -228,4 +259,144 @@ std::string Server::handleScheduleIndividualMeeting(int clientSocket, const std:
 
         return "404;Meeting not found";
     }
+}
+std::string Server::checkMeetingWithTeacher(const std::string &email, int meetingId)
+{
+    if (dbManager.checkMeetingWithTeacher(email, meetingId))
+    {
+        return "200;Teacher and meeting match";
+    }
+    return "409;Conflict";
+}
+std::string Server::handleCreateContent(int meetingId, const std::string &content)
+{
+    if (dbManager.createContent(meetingId, content))
+    {
+        return "200;Content created successfully";
+    }
+    return "404;Bad request";
+}
+
+//Handle Request Xem lịch rảnh của thầy
+void Server::handleViewTimeSlotsRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int teacherId = requestJson["teacher_id"].asInt();
+
+    DatabaseManager dbManager(connectionString);
+    auto timeSlots = dbManager.getTeacherTimeSlots(teacherId);
+
+    Json::Value responseJson;
+    for (const auto &slot : timeSlots)
+    {
+        Json::Value slotJson;
+        slotJson["start_time"] = slot.first;
+        slotJson["end_time"] = slot.second;
+        responseJson["time_slots"].append(slotJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+
+void Server::handleCreateTimeSlotRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int teacherId = requestJson["teacher_id"].asInt();
+    std::string startTime = requestJson["start_time"].asString();
+    std::string endTime = requestJson["end_time"].asString();
+    bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
+
+    DatabaseManager dbManager(connectionString);
+    bool success = dbManager.createTimeSlot(teacherId, startTime, endTime, isGroupMeeting);
+
+    Json::Value responseJson;
+    responseJson["success"] = success;
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+
+void Server::handleEditTimeSlotRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    int slotId = requestJson["slot_id"].asInt();
+    std::string startTime = requestJson["start_time"].asString();
+    std::string endTime = requestJson["end_time"].asString();
+    bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
+
+    DatabaseManager dbManager(connectionString);
+    bool success = dbManager.editTimeSlot(slotId, startTime, endTime, isGroupMeeting);
+
+    Json::Value responseJson;
+    responseJson["success"] = success;
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+#Handle request view meeting shcedule by date or week
+void Server::handleViewMeetingsByDateRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    std::string date = requestJson["date"].asString();
+
+    DatabaseManager dbManager(connectionString);
+    auto meetings = dbManager.getMeetingsByDate(date);
+
+    Json::Value responseJson;
+    for (const auto &meeting : meetings)
+    {
+        Json::Value meetingJson;
+        meetingJson["id"] = std::get<0>(meeting);
+        meetingJson["teacher_id"] = std::get<1>(meeting);
+        meetingJson["student_id"] = std::get<2>(meeting);
+        meetingJson["start_time"] = std::get<3>(meeting);
+        meetingJson["end_time"] = std::get<4>(meeting);
+        meetingJson["is_group_meeting"] = std::get<5>(meeting);
+        responseJson["meetings"].append(meetingJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
+}
+
+void Server::handleViewMeetingsByWeekRequest(const std::string &request, std::string &response)
+{
+    Json::Value requestJson;
+    Json::Reader reader;
+    reader.parse(request, requestJson);
+
+    std::string startDate = requestJson["start_date"].asString();
+    std::string endDate = requestJson["end_date"].asString();
+
+    DatabaseManager dbManager(connectionString);
+    auto meetings = dbManager.getMeetingsByWeek(startDate, endDate);
+
+    Json::Value responseJson;
+    for (const auto &meeting : meetings)
+    {
+        Json::Value meetingJson;
+        meetingJson["id"] = std::get<0>(meeting);
+        meetingJson["teacher_id"] = std::get<1>(meeting);
+        meetingJson["student_id"] = std::get<2>(meeting);
+        meetingJson["start_time"] = std::get<3>(meeting);
+        meetingJson["end_time"] = std::get<4>(meeting);
+        meetingJson["is_group_meeting"] = std::get<5>(meeting);
+        responseJson["meetings"].append(meetingJson);
+    }
+
+    Json::StreamWriterBuilder writer;
+    response = Json::writeString(writer, responseJson);
 }
