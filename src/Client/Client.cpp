@@ -3,6 +3,8 @@
 #include <cstring>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sstream>
+
 
 Client::Client(const std::string &serverIP, int port)
 {
@@ -50,7 +52,7 @@ std::string Client::sendRequest(const std::string &request)
     if (bytesRead > 0)
     {
         std::string response(buffer, bytesRead);
-        std::cout << "Server response:\n " << response << std::endl;
+        // std::cout << "Server response:\n " << response << std::endl;
         return response; // Trả về phản hồi dưới dạng chuỗi
     }
     else
@@ -58,4 +60,15 @@ std::string Client::sendRequest(const std::string &request)
         std::cerr << "Failed to receive response from server" << std::endl;
         return ""; // Trả về chuỗi rỗng nếu không nhận được phản hồi
     }
+}
+std::vector<std::string> Client::split(const std::string &str, char delimiter)
+{
+    std::vector<std::string> result;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter))
+    {
+        result.push_back(token);
+    }
+    return result;
 }

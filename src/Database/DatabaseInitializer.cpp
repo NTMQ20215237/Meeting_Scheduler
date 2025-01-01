@@ -60,8 +60,10 @@ private:
                 "name VARCHAR(255) NOT NULL,"
                 "is_male BOOLEAN NOT NULL,"
                 "password VARCHAR(255) NOT NULL,"
-                "is_teacher BOOLEAN NOT NULL"
-                ");");
+                "is_teacher BOOLEAN NOT NULL,"
+                "token VARCHAR(255)"
+                ");"
+            );
 
             // Bảng Meetings
             txn.exec(

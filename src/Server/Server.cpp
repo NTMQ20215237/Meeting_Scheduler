@@ -8,6 +8,9 @@
 #include <sstream>
 #include <mutex>
 #include <map>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 DatabaseManager dbManager("dbname=meeting_scheduler user=admin password=secret host=localhost");
 std::mutex clientMutex;
@@ -182,21 +185,22 @@ std::string Server::handleRegister(const std::string &email, const std::string &
 
 std::string Server::handleLogin(int clientSocket, const std::string &email, const std::string &password)
 {
-    if (dbManager.loginUser(email, password) == 2)
+    std::vector<std::string> res = split(dbManager.loginUser(email, password), '/');
+    if (res[0] == "2")
     {
         {
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful by teacher";
+        return "200;Login successful by teacher/"+res[1];
     }
-    else if (dbManager.loginUser(email, password) == 1)
+    else if (res[0] == "1")
     {
         {
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful by student";
+        return "200;Login successful by student/"+res[1];
     }
     else
     {

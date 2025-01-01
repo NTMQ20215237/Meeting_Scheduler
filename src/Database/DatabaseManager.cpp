@@ -4,6 +4,9 @@
 #include <sstream>
 #include <functional>
 #include <algorithm>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 // Có thể cần thêm thư viện cho mã hóa mật khẩu như OpenSSL
 
 DatabaseManager::DatabaseManager(const std::string &connectionStr)
@@ -44,8 +47,10 @@ bool DatabaseManager::registerUser(const std::string &email, const std::string &
     }
 }
 
-int DatabaseManager::loginUser(const std::string &email, const std::string &password)
+std::string DatabaseManager::loginUser(const std::string &email, const std::string &password)
 {
+    boost::uuids::random_generator generator;
+    boost::uuids::uuid token = generator();
     try
     {
         // Khởi tạo kết nối tới cơ sở dữ liệu
@@ -63,13 +68,19 @@ int DatabaseManager::loginUser(const std::string &email, const std::string &pass
         {
             bool isTeacher = r[0][0].as<bool>(); // Lấy giá trị is_teacher
             std::cout << "Login successful for user: " << email << std::endl;
+            std::string tokenStr = boost::uuids::to_string(token);
+            pqxx::nontransaction txn1(conn);
+            txn1.exec_params(
+                "UPDATE Users SET token = $1 WHERE email = $2",
+                tokenStr, email);
+            txn1.commit();
             if (isTeacher)
             {
-                return 2;
+                return "2/"+tokenStr;
             }
             else
             {
-                return 1;
+                return "1/"+tokenStr;
             }
         }
     }

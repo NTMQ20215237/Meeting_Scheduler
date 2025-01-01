@@ -1,6 +1,7 @@
 #include "Client.h"
 #include <iostream>
 #include <string>
+#include<vector>
 bool parseBoolean(const std::string &str)
 {
     return str == "true" || str == "1" || str == "yes";
@@ -49,8 +50,11 @@ int main()
 
             command = "LOGIN/" + email + "/" + password;
             response = client.sendRequest(command);
-            if (response == "200;Login successful by teacher")
+            std::vector<std::string> res = client.split(response, '/');
+
+            if (res[0] == "200;Login successful by teacher")
             {
+                std::cout << "Login successful by teacher\n";
                 // Hiển thị các chức năng khác sau khi đăng nhập thành công
                 while (true)
                 {
@@ -138,7 +142,7 @@ int main()
                     }
                 }
             }
-            else if (response == "200;Login successful by student")
+            else if (res[0] == "200;Login successful by student")
             {
                 // Hiển thị các chức năng khác sau khi đăng nhập thành công
                 while (true)
