@@ -18,8 +18,8 @@ public:
     bool editTimeSlot(int slotId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting);
     bool createTimeSlot(int teacherId, const std::string &startTime, const std::string &endTime, bool isGroupMeeting);
     std::vector<std::pair<std::string, std::string>> getTeacherTimeSlots(int teacherId);
-    std::vector<std::tuple<int, int, std::string, std::string, bool>> getMeetingsByDate(const std::string &date);
-    std::vector<std::tuple<int, int, std::string, std::string, bool>> getMeetingsByWeek(const std::string &startDate, const std::string &endDate);
+    std::vector<std::tuple<int, int,int, std::string, std::string, bool>> getMeetingsByDate(const std::string &date);
+    std::vector<std::tuple<int, int,int, std::string, std::string, bool>> getMeetingsByWeek(const std::string &startDate, const std::string &endDate);
 
 private:
     std::string connectionString;

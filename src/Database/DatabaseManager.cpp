@@ -254,9 +254,9 @@ bool DatabaseManager::editTimeSlot(int slotId, const std::string &startTime, con
 }
 
 // #Fetch meeting schdule by week or date
-std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByDate(const std::string &date)
+std::vector<std::tuple<int, int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByDate(const std::string &date)
 {
-    std::vector<std::tuple<int, int, std::string, std::string, bool>> meetings;
+    std::vector<std::tuple<int, int, int, std::string, std::string, bool>> meetings;
     try
     {
         pqxx::connection conn(connectionString);
@@ -284,9 +284,9 @@ std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManage
     return meetings;
 }
 
-std::vector<std::tuple<int, int, std::string, std::string, bool>> DatabaseManager::getMeetingsByWeek(const std::string &startDate, const std::string &endDate)
+std::vector<std::tuple<int, int,int, std::string, std::string, bool>> DatabaseManager::getMeetingsByWeek(const std::string &startDate, const std::string &endDate)
 {
-    std::vector<std::tuple<int, int, std::string, std::string, bool>> meetings;
+    std::vector<std::tuple<int, int,int, std::string, std::string, bool>> meetings;
     try
     {
         pqxx::connection conn(connectionString);
