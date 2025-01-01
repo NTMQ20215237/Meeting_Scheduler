@@ -3,7 +3,8 @@
 #include <cstring>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <json/json.h>
+#include <sstream>
+#include <jsoncpp/json/json.h>
 
 Client::Client(const std::string &serverIP, int port)
 {
@@ -20,7 +21,7 @@ void Client::connectToServer(const std::string &serverIP, int port)
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket < 0)
     {
-        perror("Socket failed");
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -30,38 +31,110 @@ void Client::connectToServer(const std::string &serverIP, int port)
 
     if (inet_pton(AF_INET, serverIP.c_str(), &serv_addr.sin_addr) <= 0)
     {
-        std::cerr << "Invalid address/ Address not supported\n";
-        return;
+        std::cerr << "Invalid address or address not supported\n";
+        exit(EXIT_FAILURE);
     }
 
     if (connect(clientSocket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        std::cerr << "Connection Failed\n";
-        return;
+        std::cerr << "Connection failed\n";
+        exit(EXIT_FAILURE);
     }
 }
 
-std::string Client::sendRequest(const std::string &request)
+std::string Client::sendRequest(const std::string &requestType, const std::string &request, std::string &response)
 {
-    // Gửi yêu cầu tới server
-    send(clientSocket, request.c_str(), request.size(), 0);
+    std::string fullRequest = requestType + "\n" + request;
+    if (send(clientSocket, fullRequest.c_str(), fullRequest.size(), 0) < 0)
+    {
+        perror("Failed to send request");
+        return "";
+    }
 
     char buffer[1024] = {0};
     int bytesRead = read(clientSocket, buffer, sizeof(buffer));
     if (bytesRead > 0)
     {
-        std::string response(buffer, bytesRead);
-        std::cout << "Server response: " << response << std::endl;
-        return response; // Trả về phản hồi dưới dạng chuỗi
+        response = std::string(buffer, bytesRead);
+        return response;
     }
     else
     {
         std::cerr << "Failed to receive response from server" << std::endl;
-        return ""; // Trả về chuỗi rỗng nếu không nhận được phản hồi
+        return "";
     }
 }
 
-// Request và Xem lịch rảnh của teacher
+void Client::registerUser(const std::string &email, const std::string &name, bool isMale, const std::string &password, bool isTeacher)
+{
+    Json::Value requestJson;
+    requestJson["email"] = email;
+    requestJson["name"] = name;
+    requestJson['is']  = isMale;
+    requestJson["password"] = password;
+    requestJson["is_teacher"] = isTeacher;
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("REGISTER", request, response);
+
+    Json::Value responseJson;
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
+
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
+    {
+        if (responseJson["success"].asBool())
+        {
+            std::cout << "User registered successfully." << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to register user." << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
+    }
+}
+
+void Client::loginUser(const std::string &email, const std::string &password)
+{
+    Json::Value requestJson;
+    requestJson["email"] = email;
+    requestJson["password"] = password;
+
+    Json::StreamWriterBuilder writer;
+    std::string request = Json::writeString(writer, requestJson);
+
+    std::string response;
+    sendRequest("LOGIN", request, response);
+
+    Json::Value responseJson;
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
+
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
+    {
+        if (responseJson["success"].asBool())
+        {
+            std::cout << "Login successful." << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to login." << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
+    }
+}
+
 void Client::viewTeacherTimeSlots(int teacherId)
 {
     Json::Value requestJson;
@@ -74,13 +147,21 @@ void Client::viewTeacherTimeSlots(int teacherId)
     sendRequest("VIEW_TIME_SLOTS", request, response);
 
     Json::Value responseJson;
-    Json::Reader reader;
-    reader.parse(response, responseJson);
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
 
-    for (const auto &slot : responseJson["time_slots"])
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
     {
-        std::cout << "Start Time: " << slot["start_time"].asString()
- 
+        for (const auto &slot : responseJson["time_slots"])
+        {
+            std::cout << "Start Time: " << slot["start_time"].asString()
+                      << ", End Time: " << slot["end_time"].asString() << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
     }
 }
 
@@ -94,21 +175,28 @@ void Client::createTimeSlot(int teacherId, const std::string &startTime, const s
 
     Json::StreamWriterBuilder writer;
     std::string request = Json::writeString(writer, requestJson);
-
     std::string response;
     sendRequest("CREATE_TIME_SLOT", request, response);
 
     Json::Value responseJson;
-    Json::Reader reader;
-    reader.parse(response, responseJson);
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
 
-    if (responseJson["success"].asBool())
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
     {
-        std::cout << "Time slot created successfully." << std::endl;
+        if (responseJson["success"].asBool())
+        {
+            std::cout << "Time slot created successfully." << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to create time slot." << std::endl;
+        }
     }
     else
     {
-        std::cout << "Failed to create time slot." << std::endl;
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
     }
 }
 
@@ -127,20 +215,27 @@ void Client::editTimeSlot(int slotId, const std::string &startTime, const std::s
     sendRequest("EDIT_TIME_SLOT", request, response);
 
     Json::Value responseJson;
-    Json::Reader reader;
-    reader.parse(response, responseJson);
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
 
-    if (responseJson["success"].asBool())
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
     {
-        std::cout << "Time slot edited successfully." << std::endl;
+        if (responseJson["success"].asBool())
+        {
+            std::cout << "Time slot edited successfully." << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to edit time slot." << std::endl;
+        }
     }
     else
     {
-        std::cout << "Failed to edit time slot." << std::endl;
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
     }
 }
 
-#Send request to view meeting shcedule by date or week
 void Client::viewMeetingsByDate(const std::string &date)
 {
     Json::Value requestJson;
@@ -153,17 +248,25 @@ void Client::viewMeetingsByDate(const std::string &date)
     sendRequest("VIEW_MEETINGS_BY_DATE", request, response);
 
     Json::Value responseJson;
-    Json::Reader reader;
-    reader.parse(response, responseJson);
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
 
-    for (const auto &meeting : responseJson["meetings"])
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
     {
-        std::cout << "Meeting ID: " << meeting["id"].asInt()
-                  << ", Teacher ID: " << meeting["teacher_id"].asInt()
-                  << ", Student ID: " << meeting["student_id"].asInt()
-                  << ", Start Time: " << meeting["start_time"].asString()
-                  << ", End Time: " << meeting["end_time"].asString()
-                  << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+        for (const auto &meeting : responseJson["meetings"])
+        {
+            std::cout << "Meeting ID: " << meeting["id"].asInt()
+                      << ", Teacher ID: " << meeting["teacher_id"].asInt()
+                      << ", Student ID: " << meeting["student_id"].asInt()
+                      << ", Start Time: " << meeting["start_time"].asString()
+                      << ", End Time: " << meeting["end_time"].asString()
+                      << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
     }
 }
 
@@ -180,16 +283,24 @@ void Client::viewMeetingsByWeek(const std::string &startDate, const std::string 
     sendRequest("VIEW_MEETINGS_BY_WEEK", request, response);
 
     Json::Value responseJson;
-    Json::Reader reader;
-    reader.parse(response, responseJson);
+    Json::CharReaderBuilder readerBuilder;
+    std::string errors;
+    std::istringstream responseStream(response);
 
-    for (const auto &meeting : responseJson["meetings"])
+    if (Json::parseFromStream(readerBuilder, responseStream, &responseJson, &errors))
     {
-        std::cout << "Meeting ID: " << meeting["id"].asInt()
-                  << ", Teacher ID: " << meeting["teacher_id"].asInt()
-                  << ", Student ID: " << meeting["student_id"].asInt()
-                  << ", Start Time: " << meeting["start_time"].asString()
-                  << ", End Time: " << meeting["end_time"].asString()
-                  << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+        for (const auto &meeting : responseJson["meetings"])
+        {
+            std::cout << "Meeting ID: " << meeting["id"].asInt()
+                      << ", Teacher ID: " << meeting["teacher_id"].asInt()
+                      << ", Student ID: " << meeting["student_id"].asInt()
+                      << ", Start Time: " << meeting["start_time"].asString()
+                      << ", End Time: " << meeting["end_time"].asString()
+                      << ", Is Group Meeting: " << meeting["is_group_meeting"].asBool() << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to parse JSON: " << errors << std::endl;
     }
 }

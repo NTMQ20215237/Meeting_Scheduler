@@ -38,8 +38,7 @@ int main()
             bool isMale = parseBoolean(isMaleStr);
             bool isTeacher = parseBoolean(isTeacherStr);
 
-            command = "REGISTER/" + email + "/" + name + "/" + password + "/" + (isMale ? "1" : "0") + "/" + (isTeacher ? "1" : "0");
-            client.sendRequest(command);
+            client.registerUser(email, name, isMale, password, isTeacher);
         }
         else if (command == "LOGIN")
         {
@@ -186,22 +185,6 @@ int main()
             std::getline(std::cin, type);
 
             command = "SCHEDULE_INDIVIDUAL_MEETING/" + timeslot_id + "/" + student_id + "/" + type;
-        }
-        else if (command == "SCHEDULE_GROUP_MEETING_WITH_TEACHER")
-        {
-            std::string teacherEmail, startAt, endAt, title;
-            std::vector<std::string> studentIds;
-            bool isGroup;
-            std::cout << "Teacher Email: ";
-            std::getline(std::cin, teacherEmail);
-            std::cout << "Start At('YYYY/MM/DD HH:MM:SS'): ";
-            std::getline(std::cin, startAt);
-            std::cout << "End At('YYYY/MM/DD HH:MM:SS'): ";
-            std::getline(std::cin, endAt);
-            std::cout << "Title: ";
-            std::getline(std::cin, title);
-
-            command = "SCHEDULE_GROUP_MEETING_WITH_TEACHER/" + teacherEmail + "/" + startAt + "/" + title;
         }
         else if (command == "LOGOUT")
         {

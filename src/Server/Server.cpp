@@ -8,7 +8,10 @@
 #include <sstream>
 #include <mutex>
 #include <map>
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
+
+DatabaseManager::DatabaseManager(const std::string &connectionStr)
+    : connectionString(connectionStr) {}
 
 DatabaseManager dbManager("dbname=meeting_scheduler user=admin password=secret host=localhost");
 std::mutex clientMutex;
@@ -150,15 +153,9 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
     }
     else if (command == "CREATE_CONTENT")
     {
-        // Handle ENTER_CONTENT command
-        // Example: ENTER_CONTENT/1/Meeting minutes content
-        // Extract meeting ID and content from parts
         int meetingId = std::stoi(parts[1]);
         std::string content = parts[2];
-        // Call a method to handle this command
         return Server::handleCreateContent(meetingId, content);
-        // handleEnterContent(meetingId, content);
-        return "200;Content entered successfully";
     }
     else if (command == "LOGOUT")
     {
@@ -215,7 +212,6 @@ std::string Server::handleLogout(int clientSocket)
     return "200;Logout successful";
 }
 
-
 std::string Server::handleCancelMeeting(int clientSocket, const std::string &meetingID)
 {
     std::string email;
@@ -253,13 +249,16 @@ std::string Server::handleScheduleIndividualMeeting(int clientSocket, const std:
         {
             return "401;Not logged in";
         }
-        if(dbManager.scheduleIndividualMeeting(timeslot_id, student_id, type)){
-            return "200;Meeting scheduled";
-        }
-
-        return "404;Meeting not found";
     }
+
+    if (dbManager.scheduleIndividualMeeting(timeslot_id, student_id, type))
+    {
+        return "200;Meeting scheduled";
+    }
+
+    return "404;Meeting not found";
 }
+
 std::string Server::checkMeetingWithTeacher(const std::string &email, int meetingId)
 {
     if (dbManager.checkMeetingWithTeacher(email, meetingId))
@@ -268,6 +267,7 @@ std::string Server::checkMeetingWithTeacher(const std::string &email, int meetin
     }
     return "409;Conflict";
 }
+
 std::string Server::handleCreateContent(int meetingId, const std::string &content)
 {
     if (dbManager.createContent(meetingId, content))
@@ -277,7 +277,6 @@ std::string Server::handleCreateContent(int meetingId, const std::string &conten
     return "404;Bad request";
 }
 
-//Handle Request Xem lịch rảnh của thầy
 void Server::handleViewTimeSlotsRequest(const std::string &request, std::string &response)
 {
     Json::Value requestJson;
@@ -286,7 +285,6 @@ void Server::handleViewTimeSlotsRequest(const std::string &request, std::string 
 
     int teacherId = requestJson["teacher_id"].asInt();
 
-    DatabaseManager dbManager(connectionString);
     auto timeSlots = dbManager.getTeacherTimeSlots(teacherId);
 
     Json::Value responseJson;
@@ -313,7 +311,6 @@ void Server::handleCreateTimeSlotRequest(const std::string &request, std::string
     std::string endTime = requestJson["end_time"].asString();
     bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
 
-    DatabaseManager dbManager(connectionString);
     bool success = dbManager.createTimeSlot(teacherId, startTime, endTime, isGroupMeeting);
 
     Json::Value responseJson;
@@ -334,7 +331,6 @@ void Server::handleEditTimeSlotRequest(const std::string &request, std::string &
     std::string endTime = requestJson["end_time"].asString();
     bool isGroupMeeting = requestJson["is_group_meeting"].asBool();
 
-    DatabaseManager dbManager(connectionString);
     bool success = dbManager.editTimeSlot(slotId, startTime, endTime, isGroupMeeting);
 
     Json::Value responseJson;
@@ -343,7 +339,7 @@ void Server::handleEditTimeSlotRequest(const std::string &request, std::string &
     Json::StreamWriterBuilder writer;
     response = Json::writeString(writer, responseJson);
 }
-#Handle request view meeting shcedule by date or week
+
 void Server::handleViewMeetingsByDateRequest(const std::string &request, std::string &response)
 {
     Json::Value requestJson;
@@ -352,7 +348,6 @@ void Server::handleViewMeetingsByDateRequest(const std::string &request, std::st
 
     std::string date = requestJson["date"].asString();
 
-    DatabaseManager dbManager(connectionString);
     auto meetings = dbManager.getMeetingsByDate(date);
 
     Json::Value responseJson;
