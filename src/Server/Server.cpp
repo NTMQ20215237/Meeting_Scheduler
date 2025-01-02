@@ -162,6 +162,59 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         return Server::handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
         // handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
     }
+    else if (command == "GET_ALL_STUDENTS")
+    {
+        return getAllStudents();
+    }
+    else if (command == "GET_ALL_TEACHERS")
+    {
+        return getAllTeachers();
+    }
+    else if (command == "CREATE_MEETING")
+    {
+        std::string token = parts[1];
+        std::string meetingTitle = parts[2];
+        std::string startAt = parts[3];
+        std::string endAt = parts[4];
+        std::string isGroup = parts[5];
+        int numStudents = std::stoi(parts[6]);
+        std::vector<std::string> studentsId;
+        for (int i = 7; i < 7 + numStudents; i++)
+        {
+            studentsId.push_back(parts[i]);
+        }
+
+        return createMeeting(clientSocket,token, meetingTitle, startAt, endAt, isGroup, studentsId);
+    }
+    else if (command == "GET_ALL_MEETINGS")
+    {
+        return getAllMeetings(clientSocket);
+    }
+    else if (command == "VIEW_MEETING_DETAILS")
+    {
+        std::string meetingId = parts[1];
+        return viewMeetingDetail(clientSocket,meetingId);
+    }
+    else if (command == "EDIT_MEETING")
+    {
+        std::string meetingId = parts[1];
+        std::string meetingTitle = parts[2];
+        std::string startAt = parts[3];
+        std::string endAt = parts[4];
+        std::string isGroup = parts[5];
+        int numStudents = std::stoi(parts[6]);
+        std::vector<std::string> studentsId;
+        for (int i = 7; i < 7 + numStudents; i++)
+        {
+            studentsId.push_back(parts[i]);
+        }
+        return editMeeting(meetingId, meetingTitle, startAt, endAt, isGroup, studentsId);
+    }
+    else if (command == "DELETE_MEETING")
+    {
+        std::string meetingId = parts[1];
+        return deleteMeeting(clientSocket,meetingId);
+
     else if (command == "DECLARE_NEW_AVAILABLE_TIME_SLOT")
     {
         std::string token = parts[1];
@@ -263,6 +316,58 @@ std::string Server::handleLogin(int clientSocket, const std::string &email, cons
     {
         return "401;Invalid credentials";
     }
+}
+std::string Server::getAllStudents()
+{
+    return dbManager.getAllStudents();
+}
+
+std::string Server::getAllTeachers()
+{
+    return dbManager.getAllTeachers();
+}
+
+std::string Server::createMeeting(int clientSocket,const std::string &token, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
+{
+    // if (loggedInUsers.find(std::stoi(token)) == loggedInUsers.end())
+    // {
+    //     return "401;Unauthorized";
+    // }
+    std::string email = loggedInUsers[clientSocket];
+    if (dbManager.createMeeting(email, meetingTitle, startAt, endAt, isGroup, studentsId))
+    {
+        return "200;Meeting created successfully";
+    }
+    return "404;Bad request";
+}
+
+std::string Server::getAllMeetings(int clientSocket)
+{
+    std::string email = loggedInUsers[clientSocket];
+    return dbManager.getAllMeetings(email);
+}
+
+std::string Server::viewMeetingDetail(int clientSocket,const std::string &meetingId)
+{
+    std::string email = loggedInUsers[clientSocket];
+    return dbManager.viewMeetingDetail(email,meetingId);
+}
+
+std::string Server::editMeeting(const std::string meetingId, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
+{
+    if (dbManager.editMeeting(meetingId, meetingTitle, startAt, endAt, isGroup, studentsId))
+    {
+        return "200;Meeting edited successfully";
+    }
+    return "404;Bad request";
+}
+std::string Server::deleteMeeting(int clientSocket,const std::string &meetingId)
+{
+    if (dbManager.deleteMeeting(meetingId))
+    {
+        return "200;Meeting deleted successfully";
+    }
+    return "404;Bad request";
 }
 
 std::string Server::handleLogout(int clientSocket)

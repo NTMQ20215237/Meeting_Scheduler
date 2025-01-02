@@ -199,6 +199,256 @@ std::string DatabaseManager::viewMeetingDetailsAssociatingStudent(const std::str
     }
     return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
 }
+
+std::string DatabaseManager::getAllStudents()
+{
+    try{
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec("SELECT id,name,email FROM Users WHERE is_teacher = false");
+
+        txn.commit();
+
+        std::stringstream resultStream1;
+        std::stringstream resultStream2;
+        for (const auto &row : r)
+        {
+            std::string id = row[0].as<std::string>();
+            std::string name = row[1].as<std::string>();
+            std::string email = row[2].as<std::string>();
+
+            resultStream1 << "ID: " <<id << ", Name: "<<name<< ", Email: "<<email << std::endl;
+            resultStream2 << id << "/";
+        }
+
+        return resultStream1.str()+'|'+resultStream2.str();
+
+    }catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return "";
+    }
+}
+
+std::string DatabaseManager::getAllTeachers()
+{
+    try{
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec("SELECT id,name,email FROM Users WHERE is_teacher = true");
+
+        txn.commit();
+
+        std::stringstream resultStream1;
+        std::stringstream resultStream2;
+        for (const auto &row : r)
+        {
+            std::string id = row[0].as<std::string>();
+            std::string name = row[1].as<std::string>();
+            std::string email = row[2].as<std::string>();
+
+            resultStream1 << "ID: " <<id << ", Name: "<<name<< ", Email: "<<email << std::endl;
+            resultStream2 << id << "/";
+        }
+
+        return resultStream1.str()+'|'+resultStream2.str();
+
+    }catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return "";
+    }
+}
+
+bool DatabaseManager::createMeeting(const std::string &email, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
+{
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "INSERT INTO Meetings (title, start_at, end_at, teacher_email, is_group) VALUES ($1, $2, $3, $4, $5) RETURNING meeting_id",
+            meetingTitle, startAt, endAt, email, isGroup);
+
+        int meetingId = r[0][0].as<int>();
+
+        for (const std::string &studentId : studentsId)
+        {
+            txn.exec_params(
+                "INSERT INTO meeting_participants (meeting_id, student_id) VALUES ($1, $2)",
+                meetingId, studentId);
+        }
+
+        txn.commit();
+        std::cout << "Meeting created with ID: " << meetingId << std::endl;
+        return true;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::string DatabaseManager::getAllMeetings(const std::string &email)
+{
+    try{
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "SELECT meeting_id,title,start_at,end_at, is_group FROM Meetings WHERE teacher_email = $1",email
+        );
+
+        txn.commit();
+
+        std::stringstream resultStream1;
+        std::stringstream resultStream2;
+        for (const auto &row : r)
+        {
+            int meeting_id = row[0].as<int>();
+            std::string title = row[1].as<std::string>();
+            std::string start_at = row[2].as<std::string>();
+            std::string end_at = row[3].as<std::string>();
+            bool is_group = row[4].as<bool>();
+
+            resultStream1 << "Meeting ID: " << meeting_id
+                         << ", Title: " << title << std::endl
+                         << ", Start at: " << start_at << std::endl
+                         << ", End at: " << end_at <<std::endl
+                         << ", Is group: " << (is_group ? "true" : "false") << std::endl;
+            resultStream2 << meeting_id << "/";
+        }
+
+        return resultStream1.str() + "|" + resultStream2.str();
+
+    }catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return "|";
+    }
+}
+
+std::string DatabaseManager::viewMeetingDetail(const std::string &email, const std::string &meetingId)
+{
+    std::stringstream resultStream1;
+    std::stringstream resultStream2;
+    std::stringstream resultStream3;
+      try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "SELECT title,start_at,end_at,is_group FROM Meetings WHERE teacher_email = $1 AND meeting_id = $2",
+            email,meetingId);
+        pqxx::result r1 = txn.exec_params(
+            "SELECT u.name,u.email FROM users u JOIN meeting_participants mp ON u.id = mp.student_id WHERE mp.meeting_id = $1",
+            meetingId
+        );
+        pqxx::result r2 = txn.exec_params(
+            "SELECT u.name,u.email FROM users u WHERE u.email = $1",email
+        );
+
+        txn.commit();
+
+        if (!r.empty())
+        {
+            std::string title = r[0][0].as<std::string>();
+            std::string start_at = r[0][1].as<std::string>();
+            std::string end_at = r[0][2].as<std::string>();
+            bool is_group = r[0][3].as<bool>();
+
+            resultStream1 << "Title: " << title
+                         << ", Start at: " << start_at
+                         << ", End at: " << end_at
+                         << ", Is group: " << (is_group ? "true" : "false")<< std::endl;
+
+            resultStream2 << "Teacher: " << r2[0][0].as<std::string>() << ", Email: " << r2[0][1].as<std::string>() << std::endl;
+            resultStream3 << "Participants: \n";
+            for (const auto &row : r1)
+            {
+                resultStream3 << "Name: " << row[0].as<std::string>() << ", Email: " << row[1].as<std::string>() << std::endl;
+            } 
+
+            resultStream1 << resultStream2.str() << resultStream3.str();
+        }
+        else
+        {
+            resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+            }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+      resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
+    }
+    return resultStream1.str(); // Trả về kết quả dưới dạng chuỗi
+}
+
+bool DatabaseManager::deleteMeeting(const std::string &meetingId)
+{
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "DELETE FROM Meetings WHERE meeting_id = $1",
+            meetingId);
+
+        txn.commit();
+        std::cout << "Meeting deleted with ID: " << meetingId << std::endl;
+        return true;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+      return false;
+    }
+}
+
+bool DatabaseManager::editMeeting(const std::string &meetingId, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
+{
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "UPDATE Meetings SET title = $1, start_at = $2, end_at = $3, is_group = $4 WHERE meeting_id = $5",
+            meetingTitle, startAt, endAt, isGroup, meetingId);
+
+        txn.exec_params(
+            "DELETE FROM meeting_participants WHERE meeting_id = $1",
+            meetingId);
+
+        for (const std::string &studentId : studentsId)
+        {
+            txn.exec_params(
+                "INSERT INTO meeting_participants (meeting_id, student_id) VALUES ($1, $2)",
+                meetingId, studentId);
+        }
+
+        txn.commit();
+        std::cout << "Meeting edited with ID: " << meetingId << std::endl;
+        return true;
+          }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+                return false;
+    }
+}
+        
+        
+
 std::string DatabaseManager::declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time)
 {
     try
@@ -342,7 +592,7 @@ std::string DatabaseManager::viewAllAvailableTimeSlots(const std::string &token)
 }
 std::string DatabaseManager::removeAvailableTimeSlot(const std::string &token, int order)
 {
-    try
+      try
     {
         // Khởi tạo kết nối tới cơ sở dữ liệu
         pqxx::connection conn(connectionString);
@@ -392,11 +642,11 @@ std::string DatabaseManager::removeAvailableTimeSlot(const std::string &token, i
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-    }
+          }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return "500: Internal Server Error";
+              return "500: Internal Server Error";
     }
 }
 std::string DatabaseManager::updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time)
@@ -451,11 +701,11 @@ std::string DatabaseManager::updateAvailableTimeSlot(const std::string &token, i
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-    }
+          }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return "500: Internal Server Error";
+           return "500: Internal Server Error";
     }
 }
 
@@ -521,11 +771,12 @@ std::string DatabaseManager::viewAvailableTimeSlotWithTimeRange(const std::strin
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-    }
+          }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return "500: Internal Server Error";
+              return "500: Internal Server Error";
     }
     return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
 }
+
