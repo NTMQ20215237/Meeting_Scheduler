@@ -180,6 +180,12 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         // handleViewAllAvailableTimeSlot(token);
         return Server::handleViewAllAvailableTimeSlot(token);
     }
+    else if (command == "VIEW_TEACHER_AVAILABLE_TIME_SLOTS")
+    {
+        std::string token = parts[1];
+        std::string teacherEmail = parts[2];
+        return Server::handleViewTeacherAvailableTimeSlots(token, teacherEmail);
+    }
     else if (command == "REMOVE_AVAILABLE_TIME_SLOT")
     {
         // Handle REMOVE_AVAILABLE_TIME_SLOT command
@@ -337,4 +343,8 @@ std::string Server::handleUpdateAvailableTimeSlot(const std::string &token, int 
 std::string Server::handleViewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date)
 {
     return dbManager.viewAvailableTimeSlotWithTimeRange(token, start_date, end_date);
+}
+std::string Server::handleViewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail)
+{
+    return "0";
 }

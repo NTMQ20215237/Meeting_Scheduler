@@ -387,9 +387,10 @@ int main()
                 while (true)
                 {
                     std::cout << "\nSelect an student's option:\n";
-                    std::cout << "1. Update Profile\n";
-                    std::cout << "2. Logout\n";
-                    std::cout << "3. Exit\n";
+                    std::cout << "1. View Teacher Available Time Slots\n";
+                    std::cout << "2. View Teacher Available Time Slots In Specific Date Range\n";
+                    std::cout << "3. Logout\n";
+                    std::cout << "4. Exit\n";
 
                     int option;
                     std::cout << "Enter your choice: ";
@@ -398,11 +399,56 @@ int main()
 
                     if (option == 1)
                     {
-                        // Cập nhật thông tin người dùng (ví dụ)
-                        std::cout << "Updating profile...\n";
-                        // Thực hiện các thao tác cần thiết
+                        std::string teacherEmail;
+                        std::cout << "View Teacher Available Time Slots:\n";
+                        std::cout << "Enter teacher's email: ";
+                        std::getline(std::cin, teacherEmail);
+                        command = "VIEW_TEACHER_AVAILABLE_TIME_SLOTS/" + token + "/" + teacherEmail;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
                     }
                     else if (option == 2)
+                    {
+                        std::string teacherEmail, start_date, end_date;
+                        std::cout << "Enter teacher's email: ";
+                        std::getline(std::cin, teacherEmail);
+                        std::cout << "View Teacher Available Time Slots In Specific Date Range\n";
+                        while (true)
+                        {
+                            std::cout << "Enter start date (YYYY-MM-DD): ";
+                            std::getline(std::cin, start_date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(start_date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(start_date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+                        // Validate end date input
+                        while (true)
+                        {
+                            std::cout << "Enter end date (YYYY-MM-DD): ";
+                            std::getline(std::cin, end_date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(end_date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(end_date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+                        command = "VIEW_TEACHER_AVAILABLE_TIME_SLOTS_IN_DATE_RANGE/" + token + "/" + teacherEmail + "/" + start_date + "/" + end_date;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 3)
                     {
                         // Đăng xuất
                         command = "LOGOUT/";

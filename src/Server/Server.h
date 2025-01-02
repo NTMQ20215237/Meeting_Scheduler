@@ -29,6 +29,7 @@ private:
     std::string handleRemoveAvailableTimeSlot(const std::string &token, int order);
     std::string handleUpdateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time);
     std::string handleViewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
+    std::string handleViewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail);
 };
 
 #endif
