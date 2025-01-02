@@ -27,6 +27,8 @@ public:
     std::string viewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
     std::string viewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail);
     std::string viewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date);
+    std::string getAllStudentMeetings( int clientSocket, const std::string &email);
+    std::string viewStudentMeetingDetails(const std::string &meetingId);
 
 private:
     std::string connectionString;

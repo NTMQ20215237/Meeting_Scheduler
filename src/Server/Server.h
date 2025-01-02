@@ -26,6 +26,7 @@ private:
     std::string handleDeclareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time);
     std::string handleLogout(int clientSocket); // Updated signature    std::string getAllStudents();
     std::string getAllTeachers();
+
     std::string getAllStudents();
     std::string createMeeting(int clientSocket, const std::string &token, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId);
     std::string getAllMeetings(int clientSocket);
@@ -38,6 +39,8 @@ private:
     std::string handleViewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
     std::string handleViewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail);
     std::string handleViewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date);
+    std::string getAllStudentMeetings( int clientSocket, const std::string &email);
+    std::string viewStudentMeetingDetails(const std::string &meetingId);
 };
 
 #endif

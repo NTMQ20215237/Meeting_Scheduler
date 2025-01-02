@@ -79,8 +79,6 @@ int main()
                     std::cout << "8. Delete Meeting\n";
                     std::cout << "9. View All Students\n";
                     std::cout << "10. View All Teachers\n";
-
-
                     std::cout << "11. Declare new available time slot\n";
                     std::cout << "12. Remove available time slot\n";
                     std::cout << "13. Edit available time slot\n";
@@ -314,7 +312,7 @@ int main()
                             command += id + "/";
                         }
                         response = client.sendRequest(command);
-
+                        std::cout << response << std::endl;
                     }
                     else if (option == 8)
                     {
@@ -597,8 +595,10 @@ int main()
                     std::cout << "\nSelect an student's option:\n";
                     std::cout << "1. View Teacher Available Time Slots\n";
                     std::cout << "2. View Teacher Available Time Slots In Specific Date Range\n";
-                    std::cout << "3. Logout\n";
-                    std::cout << "4. Exit\n";
+                    std::cout << "3. View All Teachers\n";
+                    std::cout << "4. View Meeting\n";
+                    std::cout << "5. Logout\n";
+                    std::cout << "6. Exit\n";
 
                     int option;
                     std::cout << "Enter your choice: ";
@@ -656,24 +656,63 @@ int main()
                         response = client.sendRequest(command);
                         std::cout << response << std::endl;
                     }
-                    else if (option == 3)
+                    else if (option ==3){
+                        std::string res = client.sendRequest("GET_ALL_TEACHERS/");
+                        std::vector<std::string> teachers = client.split(res, '|');
+                        std::cout<< "List of teachers: \n";
+                        std::cout << teachers[0] << std::endl;
+                    }
+                    else if (option == 4)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_STUDENT_MEETINGS/");
+                        if (res=="|"){
+                            std::cout << "No meeting found\n";
+                            continue;
+                        }
+                        std::string meetID;
+                        std::vector<std::string> meetings = client.split(res, '|');
+                        if (meetings.size() < 2) {
+                            std::cout << "Error: Unexpected response format." << std::endl;
+                            continue;
+                        }
+                        std::cout<< "List of meetings: \n";
+                        std::cout << meetings[0] << std::endl;
+                        std::vector<std::string> meetingsID = client.split(meetings[1], '/');
+                        while (true){
+                            std::cout << "Enter meeting ID to view details: ";
+                            std::getline(std::cin, meetID);
+                            if (std::find(meetingsID.begin(), meetingsID.end(), meetID) != meetingsID.end()){
+                                break;
+                            }
+                            else{
+                                std::cout << "Invalid meeting ID. Try again.\n";
+                            }
+                        }
+                        command = "VIEW_STUDENT_MEETING_DETAILS/" + meetID;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 5)
                     {
                         // Đăng xuất
+                        token = "";
                         command = "LOGOUT/";
                         client.sendRequest(command);
                         std::cout << "Logged out.\n";
                         break; // Thoát khỏi vòng lặp các chức năng sau khi logout
                     }
-                    else if (option == 3)
+                    else if (option == 6)
                     {
                         command = "EXIT/";
                         client.sendRequest(command);
                         std::cout << "Exiting...\n";
+                        return 0; // Thoát khỏi chương trình
                     }
                     else
                     {
                         std::cout << "Invalid option. Try again.\n";
                     }
+            
                 }
             }
             else

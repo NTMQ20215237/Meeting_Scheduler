@@ -279,6 +279,16 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         std::string end_date = parts[4];
         return Server::handleViewTeacherAvailableTimeSlotsInDateRange(token, teacherEmail, start_date, end_date);
     }
+    else if (command == "GET_ALL_STUDENT_MEETINGS")
+    {
+        std::string email = loggedInUsers[clientSocket];
+        return getAllStudentMeetings(clientSocket,email);
+    }
+    else if (command == "VIEW_STUDENT_MEETING_DETAILS")
+    {
+        std::string meetingId = parts[1];
+        return viewStudentMeetingDetails(meetingId);
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -464,4 +474,13 @@ std::string Server::handleViewTeacherAvailableTimeSlots(const std::string &token
 std::string Server::handleViewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date)
 {
     return dbManager.viewTeacherAvailableTimeSlotsInDateRange(token, teacherEmail, start_date, end_date);
+}
+
+std::string Server::getAllStudentMeetings(int clientSocket, const std::string &email)
+{
+    return dbManager.getAllStudentMeetings(clientSocket,email);
+}
+std::string Server::viewStudentMeetingDetails(const std::string &meetingId)
+{
+    return dbManager.viewStudentMeetingDetails(meetingId);
 }

@@ -881,3 +881,104 @@ std::string DatabaseManager::viewTeacherAvailableTimeSlotsInDateRange(const std:
     }
     return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
 }
+
+std::string DatabaseManager::getAllStudentMeetings(int clientSocket,const std::string &email){
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "SELECT id FROM Users WHERE email = $1", email);
+        pqxx::result r1 = txn.exec_params(
+            "SELECT meeting_id,title,teacher_email,start_at,end_at,is_group FROM Meetings WHERE meeting_id IN "
+            "(SELECT meeting_id FROM meeting_participants WHERE student_id = $1)", r[0][0].as<int>());
+        txn.commit();
+
+        std::stringstream resultStream1;
+        std::stringstream resultStream2;
+        for (const auto &row : r1)
+        {
+            int meeting_id = row[0].as<int>();
+            std::string title = row[1].as<std::string>();
+            std::string teacher_email = row[2].as<std::string>();
+            std::string start_at = row[3].as<std::string>();
+            std::string end_at = row[4].as<std::string>();
+            bool is_group = row[5].as<bool>();
+
+            resultStream1 << "Meeting ID: " << meeting_id
+                          << ", Title: " << title << std::endl
+                            << ", Teacher Email: " << teacher_email << std::endl
+                          << ", Start at: " << start_at << std::endl
+                          << ", End at: " << end_at << std::endl
+                          << ", Is group: " << (is_group ? "true" : "false") << std::endl;
+            resultStream2 << meeting_id << "/";
+        }
+
+        return resultStream1.str() + "|" + resultStream2.str();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return "|";
+    }
+}
+
+std::string DatabaseManager::viewStudentMeetingDetails(const std::string &meetingId)
+{
+    std::stringstream resultStream1;
+    std::stringstream resultStream2;
+    std::stringstream resultStream3;
+    try
+    {
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        pqxx::result r = txn.exec_params(
+            "SELECT title,start_at,end_at,is_group FROM Meetings WHERE meeting_id = $1",
+            meetingId);
+        pqxx::result r1 = txn.exec_params(
+            "SELECT u.name,u.email FROM users u JOIN meeting_participants mp ON u.id = mp.student_id WHERE mp.meeting_id = $1",
+            meetingId);
+        pqxx::result r2 = txn.exec_params(
+            "SELECT u.name,u.email FROM users u JOIN Meetings m ON u.email = m.teacher_email WHERE m.meeting_id = $1", meetingId);
+
+        txn.commit();
+
+        if (!r.empty())
+        {
+            std::string title = r[0][0].as<std::string>();
+            std::string start_at = r[0][1].as<std::string>();
+            std::string end_at = r[0][2].as<std::string>();
+            bool is_group = r[0][3].as<bool>();
+
+            resultStream1 << "Title: " << title
+                          << ", Start at: " << start_at
+                          << ", End at: " << end_at
+                          << ", Is group: " << (is_group ? "true" : "false") << std::endl;
+
+            resultStream2 << "Teacher: " << r2[0][0].as<std::string>() << ", Email: " << r2[0][1].as<std::string>() << std::endl;
+            resultStream3 << "Participants: \n";
+            for (const auto &row : r1)
+            {
+                resultStream3 << "Name: " << row[0].as<std::string>() << ", Email: " << row[1].as<std::string>() << std::endl;
+            }
+
+            resultStream1 << resultStream2.str() << resultStream3.str();
+        }
+        else
+        {
+            resultStream1 << "No meeting found for the specified meeting ID." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what()
+
+        << std::endl;
+        resultStream1 << "No meeting found for the specified meeting ID." << std::endl;
+    }
+    return resultStream1.str(); // Trả về kết quả dưới dạng chuỗi
+}
