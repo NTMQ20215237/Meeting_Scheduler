@@ -85,6 +85,7 @@ void Server::handleClient(int clientSocket)
         if (bytesRead > 0)
         {
             std::string request(buffer, bytesRead);
+            std::cout << "Request: " << request << std::endl;
             std::string response = processRequest(clientSocket, request);
             send(clientSocket, response.c_str(), response.size(), 0);
         }
@@ -161,6 +162,56 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         return Server::handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
         // handleViewMeetingDetailsAssociatingStudent(teacherEmail, studentName);
     }
+    else if (command == "DECLARE_NEW_AVAILABLE_TIME_SLOT")
+    {
+        std::string token = parts[1];
+        std::string date = parts[2];
+        std::string start_time = parts[3];
+        std::string end_time = parts[4];
+        return Server::handleDeclareNewAvailableTimeSlot(token, date, start_time, end_time);
+    }
+    else if (command == "VIEW_ALL_AVAILABLE_TIME_SLOT")
+    {
+        // Handle VIEW_ALL_AVAILABLE_TIME_SLOT command
+        // Example: VIEW_ALL_AVAILABLE_TIME_SLOT/token
+        // Extract token from parts
+        std::string token = parts[1];
+        // Call a method to handle this command
+        // handleViewAllAvailableTimeSlot(token);
+        return Server::handleViewAllAvailableTimeSlot(token);
+    }
+    else if (command == "REMOVE_AVAILABLE_TIME_SLOT")
+    {
+        // Handle REMOVE_AVAILABLE_TIME_SLOT command
+        // Example: REMOVE_AVAILABLE_TIME_SLOT/token/order
+        // Extract token and order from parts
+        std::string token = parts[1];
+        int order = std::stoi(parts[2]);
+        // Call a method to handle this command
+        // handleRemoveAvailableTimeSlot(token, order);
+        return Server::handleRemoveAvailableTimeSlot(token, order);
+    }
+    else if (command == "UPDATE_TIME_SLOT")
+    {
+        // Handle UPDATE_TIME_SLOT command
+        // Example: UPDATE_TIME_SLOT/token/order/date/start_time/end_time
+        // Extract token, order, date, start_time, and end_time from parts
+        std::string token = parts[1];
+        int order = std::stoi(parts[2]);
+        std::string date = parts[3];
+        std::string start_time = parts[4];
+        std::string end_time = parts[5];
+        // Call a method to handle this command
+        // handleUpdateAvailableTimeSlot(token, order, date, start_time, end_time);
+        return Server::handleUpdateAvailableTimeSlot(token, order, date, start_time, end_time);
+    }
+    else if (command == "VIEW_AVAILABLE_TIME_SLOT_WITH_TIME_RANGE")
+    {
+        std::string token = parts[1];
+        std::string start_date = parts[2];
+        std::string end_date = parts[3];
+        return Server::handleViewAvailableTimeSlotWithTimeRange(token, start_date, end_date);
+    }
     else if (command == "LOGOUT")
     {
         return handleLogout(clientSocket);
@@ -192,7 +243,7 @@ std::string Server::handleLogin(int clientSocket, const std::string &email, cons
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful by teacher/"+res[1];
+        return "200;Login successful by teacher/" + res[1];
     }
     else if (res[0] == "1")
     {
@@ -200,7 +251,7 @@ std::string Server::handleLogin(int clientSocket, const std::string &email, cons
             std::lock_guard<std::mutex> lock(clientMutex);
             loggedInUsers[clientSocket] = email;
         }
-        return "200;Login successful by student/"+res[1];
+        return "200;Login successful by student/" + res[1];
     }
     else
     {
@@ -246,4 +297,44 @@ std::string Server::handleViewMeetingDetailsAssociatingStudent(const std::string
     {
         return result;
     }
+}
+std::string Server::handleDeclareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time)
+{
+    // Handle DECLARE_NEW_AVAILABLE_TIME_SLOT command
+    // Example: DECLARE_NEW_AVAILABLE_TIME_SLOT/token/date/start_time/end_time
+    // Extract token, date, start_time, and end_time from parts
+    // Call a method to handle this command
+    // return handleDeclareNewAvailableTimeSlot(token, date, start_time, end_time);
+    return dbManager.declareNewAvailableTimeSlot(token, date, start_time, end_time);
+}
+std::string Server::handleViewAllAvailableTimeSlot(const std::string &token)
+{
+    // Handle VIEW_ALL_AVAILABLE_TIME_SLOT command
+    // Example: VIEW_ALL_AVAILABLE_TIME_SLOT/token
+    // Extract token from parts
+    // Call a method to handle this command
+    // return handleViewAllAvailableTimeSlots(token);
+    return dbManager.viewAllAvailableTimeSlots(token);
+}
+std::string Server::handleRemoveAvailableTimeSlot(const std::string &token, int order)
+{
+    // Handle REMOVE_AVAILABLE_TIME_SLOT command
+    // Example: REMOVE_AVAILABLE_TIME_SLOT/token/order
+    // Extract token and order from parts
+    // Call a method to handle this command
+    // return handleRemoveAvailableTimeSlot(token, order);
+    return dbManager.removeAvailableTimeSlot(token, order);
+}
+std::string Server::handleUpdateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time)
+{
+    // Handle UPDATE_TIME_SLOT command
+    // Example: UPDATE_TIME_SLOT/token/order/date/start_time/end_time
+    // Extract token, order, date, start_time, and end_time from parts
+    // Call a method to handle this command
+    // return handleUpdateAvailableTimeSlot(token, order, date, start_time, end_time);
+    return dbManager.updateAvailableTimeSlot(token, order, date, start_time, end_time);
+}
+std::string Server::handleViewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date)
+{
+    return dbManager.viewAvailableTimeSlotWithTimeRange(token, start_date, end_date);
 }

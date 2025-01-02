@@ -13,6 +13,11 @@ public:
     bool checkMeetingWithTeacher(const std::string &email, int meetingId);
     bool createContent(int meetingId, const std::string &content);
     std::string viewMeetingDetailsAssociatingStudent(const std::string &email, const std::string &studentName);
+    std::string declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time);
+    std::string viewAllAvailableTimeSlots(const std::string &token);
+    std::string removeAvailableTimeSlot(const std::string &token, int order);
+    std::string updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time);
+    std::string viewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
 
 private:
     std::string connectionString;

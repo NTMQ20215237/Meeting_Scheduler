@@ -1,7 +1,9 @@
 #include "Client.h"
 #include <iostream>
+#include <iomanip>
+#include <regex>
 #include <string>
-#include<vector>
+#include <vector>
 bool parseBoolean(const std::string &str)
 {
     return str == "true" || str == "1" || str == "yes";
@@ -65,6 +67,11 @@ int main()
                     std::cout << "2. Logout\n";
                     std::cout << "3. Exit\n";
                     std::cout << "4. View meeting details associating a student\n";
+                    std::cout << "5. Declare new available time slot\n";
+                    std::cout << "6. Remove available time slot\n";
+                    std::cout << "7. Edit available time slot\n";
+                    std::cout << "8. View all available time slot\n";
+                    std::cout << "9. View available time slot in a specific time range\n";
 
                     int option;
                     std::cout << "Enter your choice: ";
@@ -129,6 +136,7 @@ int main()
                         // std::cin.ignore(); // Để bỏ qua newline sau khi nhập option
                         command = "VIEW_MEETING_DETAILS_ASSOCIATING_STUDENT/" + email + "/" + studentName;
                         response = client.sendRequest(command);
+                        std::cout << response << std::endl;
                         // if (response == "200;Meeting details found")
                         // {
                         //     std::cout << "Meeting details found\n";
@@ -138,6 +146,233 @@ int main()
                         // {
                         //     std::cout << "You have no meeting assigned by this student\n";
                         // }
+                    }
+                    else if (option == 5)
+                    {
+                        // Declare new available time slot
+                        std::string date, start_time, end_time;
+                        std::cout << "Declare new available time slot\n";
+
+                        // Validate date input
+                        while (true)
+                        {
+                            std::cout << "Enter date (YYYY-MM-DD): ";
+                            std::getline(std::cin, date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+
+                        // Validate start time input
+                        while (true)
+                        {
+                            std::cout << "Enter start time (HH:MM): ";
+                            std::getline(std::cin, start_time);
+                            std::regex time_pattern(R"(\d{2}:\d{2})");
+                            if (std::regex_match(start_time, time_pattern))
+                            {
+                                // Check if the time is valid
+                                int hour, minute;
+                                char sep;
+                                std::istringstream ss(start_time);
+                                if (ss >> hour >> sep >> minute && sep == ':' && hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                                    break;
+                            }
+                            std::cout << "Invalid start time format! Please try again.\n";
+                        }
+
+                        // Validate end time input
+                        while (true)
+                        {
+                            std::cout << "Enter end time (HH:MM): ";
+                            std::getline(std::cin, end_time);
+                            std::regex time_pattern(R"(\d{2}:\d{2})");
+                            if (std::regex_match(end_time, time_pattern))
+                            {
+                                // Check if the time is valid
+                                int hour, minute;
+                                char sep;
+                                std::istringstream ss(end_time);
+                                if (ss >> hour >> sep >> minute && sep == ':' && hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                                    break;
+                            }
+                            std::cout << "Invalid end time format! Please try again.\n";
+                        }
+
+                        command = "DECLARE_NEW_AVAILABLE_TIME_SLOT/" + token + "/" + date + "/" + start_time + "/" + end_time;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 6)
+                    {
+                        int order;
+                        std::cout << "\nChoose the order of the time slot to remove:\n";
+
+                        // Yêu cầu xem tất cả các time slot hiện tại
+                        command = "VIEW_ALL_AVAILABLE_TIME_SLOT/" + token;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+
+                        // Nhập thứ tự slot để xóa
+                        std::cout << "Enter the slot order to remove: ";
+                        while (true)
+                        {
+                            std::cin >> order;
+                            if (order <= 0)
+                            {
+                                std::cout << "Invalid order number. Please try again." << std::endl;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        // Gửi yêu cầu xóa
+                        command = "REMOVE_AVAILABLE_TIME_SLOT/" + token + "/" + std::to_string(order);
+                        response = client.sendRequest(command);
+
+                        // Hiển thị phản hồi
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 7)
+                    {
+                        int order;
+                        std::cout << "\nChoose the order of the time slot to UPDATE:\n";
+
+                        // Yêu cầu xem tất cả các time slot hiện tại
+                        command = "VIEW_ALL_AVAILABLE_TIME_SLOT/" + token;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+
+                        // Nhập thứ tự slot để xóa
+                        std::cout << "Enter the slot order to UPDATE: ";
+                        while (true)
+                        {
+                            std::cin >> order;
+                            if (order <= 0)
+                            {
+                                std::cout << "Invalid order number. Please try again." << std::endl;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        std::string date, start_time, end_time;
+                        std::cout << "Update time slot:\n";
+                        // Validate date input
+                        while (true)
+                        {
+                            std::cin.ignore();
+                            std::cout << "Enter date (YYYY-MM-DD): ";
+                            std::getline(std::cin, date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+                        // Validate start time input
+                        while (true)
+                        {
+                            std::cout << "Enter start time (HH:MM): ";
+                            std::getline(std::cin, start_time);
+                            std::regex time_pattern(R"(\d{2}:\d{2})");
+                            if (std::regex_match(start_time, time_pattern))
+                            {
+                                // Check if the time is valid
+                                int hour, minute;
+                                char sep;
+                                std::istringstream ss(start_time);
+                                if (ss >> hour >> sep >> minute && sep == ':' && hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                                    break;
+                            }
+                            std::cout << "Invalid start time format! Please try again.\n";
+                        }
+
+                        // Validate end time input
+                        while (true)
+                        {
+                            std::cout << "Enter end time (HH:MM): ";
+                            std::getline(std::cin, end_time);
+                            std::regex time_pattern(R"(\d{2}:\d{2})");
+                            if (std::regex_match(end_time, time_pattern))
+                            {
+                                // Check if the time is valid
+                                int hour, minute;
+                                char sep;
+                                std::istringstream ss(end_time);
+                                if (ss >> hour >> sep >> minute && sep == ':' && hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                                    break;
+                            }
+                            std::cout << "Invalid end time format! Please try again.\n";
+                        }
+
+                        command = "UPDATE_TIME_SLOT/" + token + "/" + std::to_string(order) + "/" + date + "/" + start_time + "/" + end_time;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 8)
+                    {
+                        // View all available time slot
+                        std::cout << "View all available time slot:\n";
+                        command = "VIEW_ALL_AVAILABLE_TIME_SLOT/" + token;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                    }
+                    else if (option == 9)
+                    {
+                        // View available time slot in a specific time range
+                        std::string start_date, end_date;
+                        std::cout << "View available time slot in a specific time range\n";
+                        while (true)
+                        {
+                            std::cout << "Enter start date (YYYY-MM-DD): ";
+                            std::getline(std::cin, start_date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(start_date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(start_date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+                        // Validate end date input
+                        while (true)
+                        {
+                            std::cout << "Enter end date (YYYY-MM-DD): ";
+                            std::getline(std::cin, end_date);
+                            std::regex date_pattern(R"(\d{4}-\d{2}-\d{2})");
+                            if (std::regex_match(end_date, date_pattern))
+                            {
+                                // Check if the date is valid
+                                std::tm tm = {};
+                                std::istringstream ss(end_date);
+                                if (ss >> std::get_time(&tm, "%Y-%m-%d"))
+                                    break;
+                            }
+                            std::cout << "Invalid date format! Please try again.\n";
+                        }
+                        command = "VIEW_AVAILABLE_TIME_SLOT_WITH_TIME_RANGE/" + token + "/" + start_date + "/" + end_date;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
                     }
                     else
                     {
@@ -189,6 +424,7 @@ int main()
             }
             else
             {
+                std::cout << response << std::endl;
                 continue;
             }
         }
