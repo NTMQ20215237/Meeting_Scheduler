@@ -202,7 +202,8 @@ std::string DatabaseManager::viewMeetingDetailsAssociatingStudent(const std::str
 
 std::string DatabaseManager::getAllStudents()
 {
-    try{
+    try
+    {
         pqxx::connection conn(connectionString);
         pqxx::nontransaction txn(conn);
 
@@ -218,13 +219,13 @@ std::string DatabaseManager::getAllStudents()
             std::string name = row[1].as<std::string>();
             std::string email = row[2].as<std::string>();
 
-            resultStream1 << "ID: " <<id << ", Name: "<<name<< ", Email: "<<email << std::endl;
+            resultStream1 << "ID: " << id << ", Name: " << name << ", Email: " << email << std::endl;
             resultStream2 << id << "/";
         }
 
-        return resultStream1.str()+'|'+resultStream2.str();
-
-    }catch (const std::exception &e)
+        return resultStream1.str() + '|' + resultStream2.str();
+    }
+    catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
         return "";
@@ -233,7 +234,8 @@ std::string DatabaseManager::getAllStudents()
 
 std::string DatabaseManager::getAllTeachers()
 {
-    try{
+    try
+    {
         pqxx::connection conn(connectionString);
         pqxx::nontransaction txn(conn);
 
@@ -249,13 +251,13 @@ std::string DatabaseManager::getAllTeachers()
             std::string name = row[1].as<std::string>();
             std::string email = row[2].as<std::string>();
 
-            resultStream1 << "ID: " <<id << ", Name: "<<name<< ", Email: "<<email << std::endl;
+            resultStream1 << "ID: " << id << ", Name: " << name << ", Email: " << email << std::endl;
             resultStream2 << id << "/";
         }
 
-        return resultStream1.str()+'|'+resultStream2.str();
-
-    }catch (const std::exception &e)
+        return resultStream1.str() + '|' + resultStream2.str();
+    }
+    catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
         return "";
@@ -295,13 +297,13 @@ bool DatabaseManager::createMeeting(const std::string &email, const std::string 
 
 std::string DatabaseManager::getAllMeetings(const std::string &email)
 {
-    try{
+    try
+    {
         pqxx::connection conn(connectionString);
         pqxx::nontransaction txn(conn);
 
         pqxx::result r = txn.exec_params(
-            "SELECT meeting_id,title,start_at,end_at, is_group FROM Meetings WHERE teacher_email = $1",email
-        );
+            "SELECT meeting_id,title,start_at,end_at, is_group FROM Meetings WHERE teacher_email = $1", email);
 
         txn.commit();
 
@@ -316,16 +318,16 @@ std::string DatabaseManager::getAllMeetings(const std::string &email)
             bool is_group = row[4].as<bool>();
 
             resultStream1 << "Meeting ID: " << meeting_id
-                         << ", Title: " << title << std::endl
-                         << ", Start at: " << start_at << std::endl
-                         << ", End at: " << end_at <<std::endl
-                         << ", Is group: " << (is_group ? "true" : "false") << std::endl;
+                          << ", Title: " << title << std::endl
+                          << ", Start at: " << start_at << std::endl
+                          << ", End at: " << end_at << std::endl
+                          << ", Is group: " << (is_group ? "true" : "false") << std::endl;
             resultStream2 << meeting_id << "/";
         }
 
         return resultStream1.str() + "|" + resultStream2.str();
-
-    }catch (const std::exception &e)
+    }
+    catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
         return "|";
@@ -337,7 +339,7 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
     std::stringstream resultStream1;
     std::stringstream resultStream2;
     std::stringstream resultStream3;
-      try
+    try
     {
         // Khởi tạo kết nối tới cơ sở dữ liệu
         pqxx::connection conn(connectionString);
@@ -345,14 +347,12 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
 
         pqxx::result r = txn.exec_params(
             "SELECT title,start_at,end_at,is_group FROM Meetings WHERE teacher_email = $1 AND meeting_id = $2",
-            email,meetingId);
+            email, meetingId);
         pqxx::result r1 = txn.exec_params(
             "SELECT u.name,u.email FROM users u JOIN meeting_participants mp ON u.id = mp.student_id WHERE mp.meeting_id = $1",
-            meetingId
-        );
+            meetingId);
         pqxx::result r2 = txn.exec_params(
-            "SELECT u.name,u.email FROM users u WHERE u.email = $1",email
-        );
+            "SELECT u.name,u.email FROM users u WHERE u.email = $1", email);
 
         txn.commit();
 
@@ -364,16 +364,16 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
             bool is_group = r[0][3].as<bool>();
 
             resultStream1 << "Title: " << title
-                         << ", Start at: " << start_at
-                         << ", End at: " << end_at
-                         << ", Is group: " << (is_group ? "true" : "false")<< std::endl;
+                          << ", Start at: " << start_at
+                          << ", End at: " << end_at
+                          << ", Is group: " << (is_group ? "true" : "false") << std::endl;
 
             resultStream2 << "Teacher: " << r2[0][0].as<std::string>() << ", Email: " << r2[0][1].as<std::string>() << std::endl;
             resultStream3 << "Participants: \n";
             for (const auto &row : r1)
             {
                 resultStream3 << "Name: " << row[0].as<std::string>() << ", Email: " << row[1].as<std::string>() << std::endl;
-            } 
+            }
 
             resultStream1 << resultStream2.str() << resultStream3.str();
         }
@@ -383,11 +383,11 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
         }
 
         txn.commit(); // Commit the transaction
-            }
+    }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-      resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
+        resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
     }
     return resultStream1.str(); // Trả về kết quả dưới dạng chuỗi
 }
@@ -410,7 +410,7 @@ bool DatabaseManager::deleteMeeting(const std::string &meetingId)
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-      return false;
+        return false;
     }
 }
 
@@ -439,15 +439,13 @@ bool DatabaseManager::editMeeting(const std::string &meetingId, const std::strin
         txn.commit();
         std::cout << "Meeting edited with ID: " << meetingId << std::endl;
         return true;
-          }
+    }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-                return false;
+        return false;
     }
 }
-        
-        
 
 std::string DatabaseManager::declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time)
 {
@@ -592,7 +590,7 @@ std::string DatabaseManager::viewAllAvailableTimeSlots(const std::string &token)
 }
 std::string DatabaseManager::removeAvailableTimeSlot(const std::string &token, int order)
 {
-      try
+    try
     {
         // Khởi tạo kết nối tới cơ sở dữ liệu
         pqxx::connection conn(connectionString);
@@ -642,11 +640,11 @@ std::string DatabaseManager::removeAvailableTimeSlot(const std::string &token, i
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-          }
+    }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-              return "500: Internal Server Error";
+        return "500: Internal Server Error";
     }
 }
 std::string DatabaseManager::updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time)
@@ -701,11 +699,11 @@ std::string DatabaseManager::updateAvailableTimeSlot(const std::string &token, i
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-          }
+    }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-           return "500: Internal Server Error";
+        return "500: Internal Server Error";
     }
 }
 
@@ -771,12 +769,115 @@ std::string DatabaseManager::viewAvailableTimeSlotWithTimeRange(const std::strin
     {
         std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
         return "500: Internal Server Error";
-          }
+    }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-              return "500: Internal Server Error";
+        return "500: Internal Server Error";
     }
     return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
 }
+std::string DatabaseManager::viewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail)
+{
+    std::stringstream resultStream; // Để lưu trữ kết quả dưới dạng chuỗi
 
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy tất cả các slot của giáo viên
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT start_time, finish_time FROM slots WHERE teacher_email = $1 ORDER BY start_time",
+            teacherEmail);
+
+        if (!slotsResult.empty())
+        {
+            int i = 1;
+            resultStream << "200: Available time slots for the specified teacher:" << std::endl;
+            for (const auto &row : slotsResult)
+            {
+                std::string start_time = row["start_time"].as<std::string>();
+                std::string finish_time = row["finish_time"].as<std::string>();
+
+                resultStream << i << ".Start time: " << start_time
+                             << ", Finish time: " << finish_time << std::endl;
+                i++;
+            }
+        }
+        else
+        {
+            resultStream << "404: No slots found for the specified teacher." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
+}
+std::string DatabaseManager::viewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date)
+{
+    std::stringstream resultStream; // Để lưu trữ kết quả dưới dạng chuỗi
+
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy tất cả các slot của giáo viên trong khoảng thời gian
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT start_time, finish_time FROM slots WHERE teacher_email = $1 AND start_time >= $2 AND finish_time <= $3 ORDER BY start_time",
+            teacherEmail, start_date, end_date + " 23:59:59");
+
+        if (!slotsResult.empty())
+        {
+            int i = 1;
+            resultStream << "200: Available time slots for the specified teacher in the specified range:" << std::endl;
+            for (const auto &row : slotsResult)
+            {
+                std::string start_time = row["start_time"].as<std::string>();
+                std::string finish_time = row["finish_time"].as<std::string>();
+
+                resultStream << i << ".Start time: " << start_time
+                             << ", Finish time: " << finish_time << std::endl;
+                i++;
+            }
+        }
+        else
+        {
+            resultStream << "404: No slots found for the specified teacher in the specified range." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
+}

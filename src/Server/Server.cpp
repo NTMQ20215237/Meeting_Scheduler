@@ -184,7 +184,7 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
             studentsId.push_back(parts[i]);
         }
 
-        return createMeeting(clientSocket,token, meetingTitle, startAt, endAt, isGroup, studentsId);
+        return createMeeting(clientSocket, token, meetingTitle, startAt, endAt, isGroup, studentsId);
     }
     else if (command == "GET_ALL_MEETINGS")
     {
@@ -193,7 +193,7 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
     else if (command == "VIEW_MEETING_DETAILS")
     {
         std::string meetingId = parts[1];
-        return viewMeetingDetail(clientSocket,meetingId);
+        return viewMeetingDetail(clientSocket, meetingId);
     }
     else if (command == "EDIT_MEETING")
     {
@@ -213,8 +213,8 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
     else if (command == "DELETE_MEETING")
     {
         std::string meetingId = parts[1];
-        return deleteMeeting(clientSocket,meetingId);
-
+        return deleteMeeting(clientSocket, meetingId);
+    }
     else if (command == "DECLARE_NEW_AVAILABLE_TIME_SLOT")
     {
         std::string token = parts[1];
@@ -270,6 +270,14 @@ std::string Server::processRequest(int clientSocket, const std::string &request)
         std::string start_date = parts[2];
         std::string end_date = parts[3];
         return Server::handleViewAvailableTimeSlotWithTimeRange(token, start_date, end_date);
+    }
+    else if (command == "VIEW_TEACHER_AVAILABLE_TIME_SLOTS_IN_DATE_RANGE")
+    {
+        std::string token = parts[1];
+        std::string teacherEmail = parts[2];
+        std::string start_date = parts[3];
+        std::string end_date = parts[4];
+        return Server::handleViewTeacherAvailableTimeSlotsInDateRange(token, teacherEmail, start_date, end_date);
     }
     else if (command == "LOGOUT")
     {
@@ -327,7 +335,7 @@ std::string Server::getAllTeachers()
     return dbManager.getAllTeachers();
 }
 
-std::string Server::createMeeting(int clientSocket,const std::string &token, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
+std::string Server::createMeeting(int clientSocket, const std::string &token, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
 {
     // if (loggedInUsers.find(std::stoi(token)) == loggedInUsers.end())
     // {
@@ -347,10 +355,10 @@ std::string Server::getAllMeetings(int clientSocket)
     return dbManager.getAllMeetings(email);
 }
 
-std::string Server::viewMeetingDetail(int clientSocket,const std::string &meetingId)
+std::string Server::viewMeetingDetail(int clientSocket, const std::string &meetingId)
 {
     std::string email = loggedInUsers[clientSocket];
-    return dbManager.viewMeetingDetail(email,meetingId);
+    return dbManager.viewMeetingDetail(email, meetingId);
 }
 
 std::string Server::editMeeting(const std::string meetingId, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId)
@@ -361,7 +369,7 @@ std::string Server::editMeeting(const std::string meetingId, const std::string &
     }
     return "404;Bad request";
 }
-std::string Server::deleteMeeting(int clientSocket,const std::string &meetingId)
+std::string Server::deleteMeeting(int clientSocket, const std::string &meetingId)
 {
     if (dbManager.deleteMeeting(meetingId))
     {
@@ -451,5 +459,9 @@ std::string Server::handleViewAvailableTimeSlotWithTimeRange(const std::string &
 }
 std::string Server::handleViewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail)
 {
-    return "0";
+    return dbManager.viewTeacherAvailableTimeSlots(token, teacherEmail);
+}
+std::string Server::handleViewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date)
+{
+    return dbManager.viewTeacherAvailableTimeSlotsInDateRange(token, teacherEmail, start_date, end_date);
 }

@@ -25,6 +25,8 @@ public:
     std::string removeAvailableTimeSlot(const std::string &token, int order);
     std::string updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time);
     std::string viewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
+    std::string viewTeacherAvailableTimeSlots(const std::string &token, const std::string &teacherEmail);
+    std::string viewTeacherAvailableTimeSlotsInDateRange(const std::string &token, const std::string &teacherEmail, const std::string &start_date, const std::string &end_date);
 
 private:
     std::string connectionString;
