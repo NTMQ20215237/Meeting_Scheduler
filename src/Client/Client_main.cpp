@@ -14,6 +14,7 @@ int main()
     Client client(serverIP, port);
     std::string command;
     std::string response;
+    std::string token;
 
     while (true)
     {
@@ -54,6 +55,7 @@ int main()
 
             if (res[0] == "200;Login successful by teacher")
             {
+                token = res[1];
                 std::cout << "Login successful by teacher\n";
                 // Hiển thị các chức năng khác sau khi đăng nhập thành công
                 while (true)
@@ -105,6 +107,7 @@ int main()
                     else if (option == 2)
                     {
                         // Đăng xuất
+                        token = "";
                         command = "LOGOUT/";
                         client.sendRequest(command);
                         std::cout << "Logged out.\n";
@@ -144,6 +147,7 @@ int main()
             }
             else if (res[0] == "200;Login successful by student")
             {
+                token = res[1];
                 // Hiển thị các chức năng khác sau khi đăng nhập thành công
                 while (true)
                 {
