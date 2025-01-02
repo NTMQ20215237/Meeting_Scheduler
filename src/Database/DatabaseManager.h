@@ -20,6 +20,11 @@ public:
     std::string viewMeetingDetail(const std::string &email, const std::string &meetingId);
     bool deleteMeeting(const std::string &meetingId);
     bool editMeeting(const std::string &meetingId, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId);
+    std::string declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time);
+    std::string viewAllAvailableTimeSlots(const std::string &token);
+    std::string removeAvailableTimeSlot(const std::string &token, int order);
+    std::string updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time);
+    std::string viewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date);
 
 private:
     std::string connectionString;

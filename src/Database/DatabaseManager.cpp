@@ -76,11 +76,11 @@ std::string DatabaseManager::loginUser(const std::string &email, const std::stri
             txn1.commit();
             if (isTeacher)
             {
-                return "2/"+tokenStr;
+                return "2/" + tokenStr;
             }
             else
             {
-                return "1/"+tokenStr;
+                return "1/" + tokenStr;
             }
         }
     }
@@ -92,7 +92,7 @@ std::string DatabaseManager::loginUser(const std::string &email, const std::stri
     {
         std::cerr << "Error: " << e.what() << std::endl;
     }
-    return 0;
+    return "0/";
 }
 bool DatabaseManager::checkMeetingWithTeacher(const std::string &email, int meetingId)
 {
@@ -337,8 +337,7 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
     std::stringstream resultStream1;
     std::stringstream resultStream2;
     std::stringstream resultStream3;
-
-    try
+      try
     {
         // Khởi tạo kết nối tới cơ sở dữ liệu
         pqxx::connection conn(connectionString);
@@ -384,11 +383,11 @@ std::string DatabaseManager::viewMeetingDetail(const std::string &email, const s
         }
 
         txn.commit(); // Commit the transaction
-    }
+            }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
+      resultStream1 << "No meeting found for the specified teacher and meeting ID." << std::endl;
     }
     return resultStream1.str(); // Trả về kết quả dưới dạng chuỗi
 }
@@ -411,7 +410,7 @@ bool DatabaseManager::deleteMeeting(const std::string &meetingId)
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return false;
+      return false;
     }
 }
 
@@ -440,10 +439,344 @@ bool DatabaseManager::editMeeting(const std::string &meetingId, const std::strin
         txn.commit();
         std::cout << "Meeting edited with ID: " << meetingId << std::endl;
         return true;
+          }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+                return false;
+    }
+}
+        
+        
+
+std::string DatabaseManager::declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time)
+{
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy email của giáo viên từ token
+        pqxx::result teacherResult = txn.exec_params(
+            "SELECT email FROM users WHERE token = $1",
+            token);
+
+        if (teacherResult.empty())
+        {
+            return "401: Unauthorized";
+        }
+
+        std::string teacherEmail = teacherResult[0]["email"].as<std::string>();
+
+        // Kiểm tra xem có thời gian chồng chéo hay không (chuyển đổi chuỗi sang timestamp để so sánh)
+        pqxx::result existingSlots = txn.exec_params(
+            "SELECT start_time, finish_time FROM slots WHERE teacher_email = $1",
+            teacherEmail);
+
+        for (const auto &row : existingSlots)
+        {
+            std::string existingStartTime = row["start_time"].as<std::string>();
+            std::string existingEndTime = row["finish_time"].as<std::string>();
+
+            // Chuyển đổi start_time và finish_time từ string sang timestamp trong SQL
+            pqxx::result overlapCheck = txn.exec_params(
+                "SELECT 1 FROM slots "
+                "WHERE teacher_email = $1 "
+                "AND (start_time < $2::timestamp AND finish_time > $3::timestamp)",
+                teacherEmail, date + " " + end_time, date + " " + start_time);
+
+            if (!overlapCheck.empty())
+            {
+                return "409: Time slot conflict with existing slot";
+            }
+        }
+
+        // Nếu không có xung đột, chèn dữ liệu mới vào bảng slots
+        txn.exec_params(
+            "INSERT INTO slots (teacher_email, start_time, finish_time) "
+            "VALUES ($1, $2, $3)",
+            teacherEmail,
+            date + " " + start_time,
+            date + " " + end_time);
+
+        txn.commit(); // Xác nhận giao dịch
+
+        return "200: Slot declared successfully";
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return "500: Internal Server Error";
     }
     catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
-        return false;
+        return "500: Internal Server Error";
     }
 }
+
+std::string DatabaseManager::viewAllAvailableTimeSlots(const std::string &token)
+{
+    std::stringstream resultStream; // Để lưu trữ kết quả dưới dạng chuỗi
+
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy email của giáo viên từ token
+        pqxx::result teacherResult = txn.exec_params(
+            "SELECT email FROM users WHERE token = $1",
+            token);
+
+        if (teacherResult.empty())
+        {
+            return "401: Unauthorized";
+        }
+
+        std::string teacherEmail = teacherResult[0]["email"].as<std::string>();
+
+        // Lấy tất cả các slot của giáo viên
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT start_time, finish_time FROM slots WHERE teacher_email = $1 ORDER BY start_time",
+            teacherEmail);
+
+        if (!slotsResult.empty())
+        {
+            int i = 1;
+            resultStream << "200: Available time slots:" << std::endl;
+            for (const auto &row : slotsResult)
+            {
+                std::string start_time = row["start_time"].as<std::string>();
+                std::string finish_time = row["finish_time"].as<std::string>();
+
+                resultStream << i << ".Start time: " << start_time
+                             << ", Finish time: " << finish_time << std::endl;
+                i++;
+            }
+        }
+        else
+        {
+            resultStream << "404: No slots found for the specified teacher." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
+}
+std::string DatabaseManager::removeAvailableTimeSlot(const std::string &token, int order)
+{
+      try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy email của giáo viên từ token
+        pqxx::result teacherResult = txn.exec_params(
+            "SELECT email FROM users WHERE token = $1",
+            token);
+
+        if (teacherResult.empty())
+        {
+            return "401: Unauthorized";
+        }
+
+        std::string teacherEmail = teacherResult[0]["email"].as<std::string>();
+
+        // Lấy danh sách các slot và kiểm tra thứ tự hợp lệ
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT id FROM slots WHERE teacher_email = $1 ORDER BY start_time",
+            teacherEmail);
+
+        if (slotsResult.empty() || order > static_cast<int>(slotsResult.size()))
+        {
+            return "400: Invalid slot order";
+        }
+
+        // Xóa slot theo thứ tự
+        int slotId = slotsResult[order - 1]["id"].as<int>();
+        txn.exec_params("DELETE FROM slots WHERE id = $1", slotId);
+
+        txn.commit(); // Commit transaction
+
+        return "200: Time slot removed successfully";
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return "500: Internal Server Error";
+          }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+              return "500: Internal Server Error";
+    }
+}
+std::string DatabaseManager::updateAvailableTimeSlot(const std::string &token, int order, const std::string &date, const std::string &start_time, const std::string &end_time)
+{
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::work txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy email của giáo viên từ token
+        pqxx::result teacherResult = txn.exec_params(
+            "SELECT email FROM users WHERE token = $1",
+            token);
+
+        if (teacherResult.empty())
+        {
+            return "401: Unauthorized";
+        }
+
+        std::string teacherEmail = teacherResult[0]["email"].as<std::string>();
+
+        // Lấy danh sách các slot và kiểm tra thứ tự hợp lệ
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT id FROM slots WHERE teacher_email = $1 ORDER BY start_time",
+            teacherEmail);
+
+        if (slotsResult.empty() || order > static_cast<int>(slotsResult.size()))
+        {
+            return "400: Invalid slot order";
+        }
+
+        // Cập nhật slot theo thứ tự
+        int slotId = slotsResult[order - 1]["id"].as<int>();
+        txn.exec_params("UPDATE slots SET start_time = $1, finish_time = $2 WHERE id = $3", date + " " + start_time, date + " " + end_time, slotId);
+
+        txn.commit(); // Commit transaction
+
+        return "200: Time slot updated successfully";
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return "500: Internal Server Error";
+          }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+           return "500: Internal Server Error";
+    }
+}
+
+std::string DatabaseManager::viewAvailableTimeSlotWithTimeRange(const std::string &token, const std::string &start_date, const std::string &end_date)
+{
+    std::stringstream resultStream; // Để lưu trữ kết quả dưới dạng chuỗi
+
+    try
+    {
+        // Khởi tạo kết nối tới cơ sở dữ liệu
+        pqxx::connection conn(connectionString);
+        pqxx::nontransaction txn(conn);
+
+        // Kiểm tra tính hợp lệ của token
+        pqxx::result r = txn.exec_params(
+            "SELECT COUNT(*) FROM users WHERE token = $1",
+            token);
+
+        if (r.empty() || r[0][0].as<int>() != 1)
+        {
+            return "401: Unauthorized";
+        }
+
+        // Lấy email của giáo viên từ token
+        pqxx::result teacherResult = txn.exec_params(
+            "SELECT email FROM users WHERE token = $1",
+            token);
+
+        if (teacherResult.empty())
+        {
+            return "401: Unauthorized";
+        }
+
+        std::string teacherEmail = teacherResult[0]["email"].as<std::string>();
+
+        // Lấy tất cả các slot của giáo viên trong khoảng thời gian
+        pqxx::result slotsResult = txn.exec_params(
+            "SELECT start_time, finish_time FROM slots WHERE teacher_email = $1 AND start_time >= $2 AND finish_time <= $3 ORDER BY start_time",
+            teacherEmail, start_date, end_date + " 23:59:59");
+
+        if (!slotsResult.empty())
+        {
+            int i = 1;
+            resultStream << "200: Available time slots in the specified range:" << std::endl;
+            for (const auto &row : slotsResult)
+            {
+                std::string start_time = row["start_time"].as<std::string>();
+                std::string finish_time = row["finish_time"].as<std::string>();
+
+                resultStream << i << ".Start time: " << start_time
+                             << ", Finish time: " << finish_time << std::endl;
+                i++;
+            }
+        }
+        else
+        {
+            resultStream << "404: No slots found for the specified teacher in the specified range." << std::endl;
+        }
+
+        txn.commit(); // Commit the transaction
+    }
+    catch (const pqxx::sql_error &e)
+    {
+        std::cerr << "SQL error: " << e.what() << ", in query: " << e.query() << std::endl;
+        return "500: Internal Server Error";
+          }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+              return "500: Internal Server Error";
+    }
+    return resultStream.str(); // Trả về kết quả dưới dạng chuỗi
+}
+
