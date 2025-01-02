@@ -13,6 +13,13 @@ public:
     bool checkMeetingWithTeacher(const std::string &email, int meetingId);
     bool createContent(int meetingId, const std::string &content);
     std::string viewMeetingDetailsAssociatingStudent(const std::string &email, const std::string &studentName);
+    std::string getAllStudents();
+    std::string getAllTeachers();
+    bool createMeeting(const std::string &email, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId);
+    std::string getAllMeetings(const std::string &email);
+    std::string viewMeetingDetail(const std::string &email, const std::string &meetingId);
+    bool deleteMeeting(const std::string &meetingId);
+    bool editMeeting(const std::string &meetingId, const std::string &meetingTitle, const std::string &startAt, const std::string &endAt, const std::string &isGroup, const std::vector<std::string> &studentsId);
     std::string declareNewAvailableTimeSlot(const std::string &token, const std::string &date, const std::string &start_time, const std::string &end_time);
     std::string viewAllAvailableTimeSlots(const std::string &token);
     std::string removeAvailableTimeSlot(const std::string &token, int order);

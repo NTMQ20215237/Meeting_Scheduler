@@ -3,10 +3,16 @@
 #include <iomanip>
 #include <regex>
 #include <string>
-#include <vector>
+#include<vector>
+#include <set>
+#include <algorithm>
+
 bool parseBoolean(const std::string &str)
 {
     return str == "true" || str == "1" || str == "yes";
+}
+bool isValidID(const std::string& id, const std::vector<std::string>& studentsID) {
+    return std::find(studentsID.begin(), studentsID.end(), id) != studentsID.end();
 }
 int main()
 {
@@ -67,11 +73,19 @@ int main()
                     std::cout << "2. Logout\n";
                     std::cout << "3. Exit\n";
                     std::cout << "4. View meeting details associating a student\n";
-                    std::cout << "5. Declare new available time slot\n";
-                    std::cout << "6. Remove available time slot\n";
-                    std::cout << "7. Edit available time slot\n";
-                    std::cout << "8. View all available time slot\n";
-                    std::cout << "9. View available time slot in a specific time range\n";
+                    std::cout << "5. Create Meeting\n";
+                    std::cout << "6. View Meeting\n";
+                    std::cout << "7. Edit Meeting\n";
+                    std::cout << "8. Delete Meeting\n";
+                    std::cout << "9. View All Students\n";
+                    std::cout << "10. View All Teachers\n";
+
+
+                    std::cout << "11. Declare new available time slot\n";
+                    std::cout << "12. Remove available time slot\n";
+                    std::cout << "13. Edit available time slot\n";
+                    std::cout << "14. View all available time slot\n";
+                    std::cout << "15. View available time slot in a specific time range\n";
 
                     int option;
                     std::cout << "Enter your choice: ";
@@ -149,6 +163,200 @@ int main()
                     }
                     else if (option == 5)
                     {
+                        std::string meetingTitle, startAt, endAt, isGroup;
+                        std::cout << "Enter title of the meeting: ";
+                        std::getline(std::cin, meetingTitle);
+                        std::cout << "Enter start time (YYYY-MM-DD HH:MM): ";
+                        std::getline(std::cin, startAt);
+                        startAt += ":00";
+                        std::cout << "Enter end time (YYYY-MM-DD HH:MM): ";
+                        std::getline(std::cin, endAt);
+                        endAt += ":00";
+                        std::cout << "Is this a group meeting? (true/false): ";
+                        std::getline(std::cin, isGroup);
+                        
+                        std::string res = client.sendRequest("GET_ALL_STUDENTS/");
+                        std::vector<std::string> students = client.split(res, '|');
+                        std::vector<std::string> studentsID = client.split(students[1], '/');
+
+                        std::cout << "List of students: \n";
+                        std::cout << students[0] << std::endl;
+
+                        std::cout << "Enter student IDs: ";
+                        std::set<std::string> enteredIDs; 
+                        std::string id;
+                        while (std::cin >> id) {
+                            if (isValidID(id, studentsID)) {
+                                if (enteredIDs.find(id) == enteredIDs.end()) {
+                                    enteredIDs.insert(id);
+                                    if (isGroup == "false"){
+                                        break;
+                                    }
+                                } else {
+                                    std::cout << "ID " << id << " is already entered. Try another one: ";
+                                }
+                            } else {
+                                std::cout << "ID " << id << " is not valid. Try again: ";
+                            }
+
+                            if (std::cin.peek() == '\n') {
+                                break;
+                            }
+                        }
+                        command = "CREATE_MEETING/" + token + "/" + meetingTitle + "/" + startAt + "/" + endAt + "/" + isGroup + "/";
+                        command += std::to_string(enteredIDs.size()) + "/";
+                        for (const std::string& id : enteredIDs) {
+                            command += id + "/";
+                        }
+                        // std::cout<<command<<std::endl;
+
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+                        
+                    }
+                    else if (option == 6)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_MEETINGS/");
+                        if (res=="|"){
+                            std::cout << "No meeting found\n";
+                            continue;
+                        }
+                        std::string meetID;
+                        std::vector<std::string> meetings = client.split(res, '|');
+                        if (meetings.size() < 2) {
+                            std::cout << "Error: Unexpected response format." << std::endl;
+                            continue;
+                        }
+                        std::cout<< "List of meetings: \n";
+                        std::cout << meetings[0] << std::endl;
+                        std::vector<std::string> meetingsID = client.split(meetings[1], '/');
+                        while (true){
+                            std::cout << "Enter meeting ID to view details: ";
+                            std::getline(std::cin, meetID);
+                            if (std::find(meetingsID.begin(), meetingsID.end(), meetID) != meetingsID.end()){
+                                break;
+                            }
+                            else{
+                                std::cout << "Invalid meeting ID. Try again.\n";
+                            }
+                        }
+                        command = "VIEW_MEETING_DETAILS/" + meetID;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+
+
+                    }
+                    else if (option == 7)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_MEETINGS/");
+                        std::string meetID;
+                        std::vector<std::string> meetings = client.split(res, '|');
+                        if (meetings.size() < 2) {
+                            std::cerr << "Error: Unexpected response format." << std::endl;
+                        }
+                        std::cout<< "List of meetings: \n";
+                        std::cout << meetings[0] << std::endl;
+                        std::vector<std::string> meetingsID = client.split(meetings[1], '/');
+                        while (true){
+                            std::cout << "Enter meeting ID to edit: ";
+                            std::getline(std::cin, meetID);
+                            if (std::find(meetingsID.begin(), meetingsID.end(), meetID) != meetingsID.end()){
+                                break;
+                            }
+                            else{
+                                std::cout << "Invalid meeting ID. Try again.\n";
+                            }
+                        }
+                        std::string meetingTitle, startAt, endAt, isGroup;
+                        std::cout << "Enter title of the meeting: ";
+                        std::getline(std::cin, meetingTitle);
+                        std::cout << "Enter start time (YYYY-MM-DD HH:MM): ";
+                        std::getline(std::cin, startAt);
+                        startAt += ":00";
+                        std::cout << "Enter end time (YYYY-MM-DD HH:MM): ";
+                        std::getline(std::cin, endAt);
+                        endAt += ":00";
+                        std::cout << "Is this a group meeting? (true/false): ";
+                        std::getline(std::cin, isGroup);
+                        
+                        std::string res3 = client.sendRequest("GET_ALL_STUDENTS/");
+                        std::vector<std::string> students = client.split(res3, '|');
+                        std::vector<std::string> studentsID = client.split(students[1], '/');
+
+                        std::cout << "List of students: \n";
+                        std::cout << students[0] << std::endl;
+
+                        std::cout << "Enter student IDs: ";
+                        std::set<std::string> enteredIDs; 
+                        std::string id;
+                        while (std::cin >> id) {
+                            if (isValidID(id, studentsID)) {
+                                if (enteredIDs.find(id) == enteredIDs.end()) {
+                                    enteredIDs.insert(id);
+                                    if (isGroup == "false"){
+                                        break;
+                                    }
+                                } else {
+                                    std::cout << "ID " << id << " is already entered. Try another one: ";
+                                }
+                            } else {
+                                std::cout << "ID " << id << " is not valid. Try again: ";
+                            }
+
+                            if (std::cin.peek() == '\n') {
+                                break;
+                            }
+                        }
+
+                        command = "EDIT_MEETING/" + meetID + "/" + meetingTitle + "/" + startAt + "/" + endAt + "/" + isGroup + "/";
+                        command += std::to_string(enteredIDs.size()) + "/";
+                        for (const std::string& id : enteredIDs) {
+                            command += id + "/";
+                        }
+                        response = client.sendRequest(command);
+
+                    }
+                    else if (option == 8)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_MEETINGS/");
+                        std::string meetID;
+                        std::vector<std::string> meetings = client.split(res, '|');
+                        if (meetings.size() < 2) {
+                            std::cerr << "Error: Unexpected response format." << std::endl;
+                        }
+                        std::cout<< "List of meetings: \n";
+                        std::cout << meetings[0] << std::endl;
+                        std::vector<std::string> meetingsID = client.split(meetings[1], '/');
+                        while (true){
+                            std::cout << "Enter meeting ID to delete: ";
+                            std::getline(std::cin, meetID);
+                            if (std::find(meetingsID.begin(), meetingsID.end(), meetID) != meetingsID.end()){
+                                break;
+                            }
+                            else{
+                                std::cout << "Invalid meeting ID. Try again.\n";
+                            }
+                        }
+                        command = "DELETE_MEETING/" + meetID;
+                        response = client.sendRequest(command);
+                        std::cout << response << std::endl;
+
+                    }
+                    else if (option == 9)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_STUDENTS/");
+                        std::vector<std::string> students = client.split(res, '|');
+                        std::cout<< "List of students: \n";
+                        std::cout << students[0] << std::endl;
+                    }
+                    else if (option == 10)
+                    {
+                        std::string res = client.sendRequest("GET_ALL_TEACHERS/");
+                        std::vector<std::string> teachers = client.split(res, '|');
+                        std::cout<< "List of teachers: \n";
+                        std::cout << teachers[0] << std::endl;
+                    }else if (option == 11)
+                    {
                         // Declare new available time slot
                         std::string date, start_time, end_time;
                         std::cout << "Declare new available time slot\n";
@@ -210,7 +418,7 @@ int main()
                         response = client.sendRequest(command);
                         std::cout << response << std::endl;
                     }
-                    else if (option == 6)
+                    else if (option == 12)
                     {
                         int order;
                         std::cout << "\nChoose the order of the time slot to remove:\n";
@@ -242,7 +450,7 @@ int main()
                         // Hiển thị phản hồi
                         std::cout << response << std::endl;
                     }
-                    else if (option == 7)
+                    else if (option == 13)
                     {
                         int order;
                         std::cout << "\nChoose the order of the time slot to UPDATE:\n";
@@ -326,7 +534,7 @@ int main()
                         response = client.sendRequest(command);
                         std::cout << response << std::endl;
                     }
-                    else if (option == 8)
+                    else if (option == 14)
                     {
                         // View all available time slot
                         std::cout << "View all available time slot:\n";
@@ -334,7 +542,7 @@ int main()
                         response = client.sendRequest(command);
                         std::cout << response << std::endl;
                     }
-                    else if (option == 9)
+                    else if (option == 15)
                     {
                         // View available time slot in a specific time range
                         std::string start_date, end_date;
